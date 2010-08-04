@@ -7,8 +7,8 @@ import Ch5ex
 
 superimposeChar:: Char -> Char -> Char
 superimposeChar ch1 ch2 
-  |ch1==ch2 &&  ch1=='.'	='.'
-  |otherwise			='#'
+  |ch1==ch2 &&  ch1=='.'        ='.'
+  |otherwise                        ='#'
   
 --6.2
 
@@ -51,15 +51,15 @@ oneElementScale element scalingnumber = replicate scalingnumber element
 
 oneLineScaleH :: [Char] -> Int -> [Char]
 oneLineScaleH line scalingnumber
-	|line/=""	= (oneElementScale (head(line)) scalingnumber) ++ (oneLineScaleH (drop 1 line) scalingnumber)
-	|otherwise 	=""
+        |line/=""        = (oneElementScale (head(line)) scalingnumber) ++ (oneLineScaleH (drop 1 line) scalingnumber)
+        |otherwise         =""
 
 oneLineScaleHV :: [Char] -> Int -> Picture
 oneLineScaleHV line scalingnumber = --[oneLineScaleH line scalingnumber | n <- [1..scalingnumber]]
-	replicate scalingnumber (oneLineScaleH line scalingnumber)
+        replicate scalingnumber (oneLineScaleH line scalingnumber)
 
 scale :: Picture -> Int -> Picture
 scale pic scalingnumber
-	| pic/=[] 	=(oneLineScaleHV (head(pic)) scalingnumber) ++ (scale (drop 1 pic) scalingnumber) 
-	| otherwise  	=[]
+        | pic/=[]         =(oneLineScaleHV (head(pic)) scalingnumber) ++ (scale (drop 1 pic) scalingnumber) 
+        | otherwise          =[]
 
