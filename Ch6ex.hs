@@ -3,7 +3,7 @@
 
 import Ch5ex
 
-
+--help
 --6.1
 
 superimposeChar:: Char -> Char -> Char
