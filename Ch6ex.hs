@@ -1,9 +1,9 @@
 --The Craft of Functional Programming 
 --Ch. 6 Programming with Lists
 
-import Ch5ex
+import Prelude hiding (lookup)
+import Ch5ex 
 
---help
 --6.1
 
 superimposeChar:: Char -> Char -> Char
@@ -234,4 +234,167 @@ below :: Image -> Int
 below img = scd(scd img)
     
 superimposeImage :: Image -> Image -> Image
-superimposeImage img1 img2 = makeImage (superimpose (padOut (frt img1) (left img1) (right img1 img2) (above img1 img2) (below img1) (width img1 img2)) (padOut (frt img2) (left img2) (right img2 img1) (above img2 img1) (below img2) (width img2 img1))) (0,0) 
+superimposeImage img1 img2 = makeImage (superimpose (padOut (frt img1) (left img1) (right img1 img2) (above img1 img2) (below img1) (width img1 img2)) (padOut (frt img2) (left img2) (right img2 img1) (above img2 img1) (below img2) (width img2 img1))) (0,0)
+
+--6.18
+
+maxThreeOccursLocal :: Int -> Int -> Int -> (Int, Int)
+maxThreeOccursLocal x y z = (maxThreeLocal x y z, occursLocal x y z) 
+  where 
+  maxThreeLocal :: Int -> Int -> Int -> Int
+  maxThreeLocal x y z = max (max x y) z
+  
+  threeEqualLocal :: Int -> Int -> Int -> Bool
+  threeEqualLocal m n p = (m==n) && (m==p)
+    
+  twoEqualLocal :: Int -> Int -> Bool 
+  twoEqualLocal m n = (m == n)
+    
+  fourEqualLocal :: Int -> Int-> Int -> Int-> Bool
+  fourEqualLocal m n p q = (m==n) && (m==p) && (m==q)
+    
+  howManyOfFourEqualLocal :: Int-> Int -> Int -> Int -> Int
+  howManyOfFourEqualLocal a b c d
+    	|fourEqualLocal a b c d			                       =4
+    	|threeEqualLocal a b c || threeEqualLocal b c d || threeEqualLocal c d a || threeEqualLocal d a b      =3
+    	|twoEqualLocal a b || twoEqualLocal b c || twoEqualLocal c d ||twoEqualLocal d a   =2
+	|otherwise	=1
+  
+  occursLocal :: Int -> Int -> Int -> Int
+  occursLocal x y z = (howManyOfFourEqualLocal (maxThreeLocal x y z) x y z) -1
+ 
+--6.20
+
+type Name = String
+type Price = Int
+type BarCode =Int
+type DatabaseSL = [(BarCode, Name, Price)]
+
+codeIndex :: DatabaseSL
+codeIndex = [ (4719, "Fish Fingers" , 121),
+              (5643, "Nappies" , 1010),
+              (3814, "Orange Jelly", 56),
+              (1111, "Hula Hoops", 21),
+              (1112, "Hula Hoops (Giant)", 133),
+              (1234, "Dry Sherry, 1lt", 540)]
+
+type TillType = [BarCode]
+type BillType = [(Name,Price)]
+
+lineLength :: Int
+lineLength = 30
+
+formatPence :: Price -> String
+formatPence price 
+  |digits ==4 = frt(splitAt 2 (show price)) ++ "." ++ scd (splitAt 2 (show price))
+  |digits ==3 = frt(splitAt 1 (show price)) ++ "." ++ scd (splitAt 1 (show price))
+  |digits ==2 = "."++ (show price)
+  |digits ==1 = ".0"++(show price)
+  where 
+  digits = length (show price)
+
+--6.21
+  
+formatLine :: (Name, Price) -> String
+formatLine (name, price) = name ++ (whiteLine n) ++ (formatPence price) ++ "\n"
+ where
+ n=lineLength - (length name) - (length (formatPence price))
+
+--6.22
+
+example :: [(Name, Price)]
+example =[("Fish Fingers", 1231), ("Nappies" , 1010),("Orange Jelly", 56)]
+
+formatLinesHelper :: [(Name, Price)] -> Int -> String
+formatLinesHelper list (-1) = ""
+formatLinesHelper list n = (formatLinesHelper list (n-1)) ++ formatLine (list!!n)
+
+formatLines :: [(Name, Price)] -> String
+formatLines list = formatLinesHelper list ((length list)-1)
+
+--6.23
+
+makeTotalHelper :: [(Name, Price)] -> Int -> Int
+makeTotalHelper list (-1) = 0
+makeTotalHelper list n = (makeTotalHelper list (n-1)) + (scd(list!!n))
+
+makeTotal :: BillType -> Price
+makeTotal list = makeTotalHelper list ((length list)-1)
+
+--6.24
+
+formatTotal :: Price -> String
+formatTotal total= "\nTotal" ++ (whiteLine n) ++ (formatPence total)
+ where
+ n=lineLength - 5 - (length (formatPence total))
+
+--6.25
+
+formatBill :: BillType -> String
+formatBill list = "\tHaskell Store\n\n"++(formatLines list)++(formatTotal(makeTotal list))
+
+--6.26
+
+look:: DatabaseSL -> BarCode -> (Name, Price)
+look dBase findCode 
+  |n == [] =("Unknown Item", 0)
+  |n /=[]   =head(n)
+  where 
+  n=[(name, price) | (code, name, price) <-dBase, code==findCode]
+
+--6.27
+
+lookup :: BarCode -> (Name, Price)
+lookup code = look codeIndex code
+
+--6.28
+
+exampleTill :: TillType
+exampleTill = [1111, 1110, 1112]
+
+makeBill :: TillType -> BillType
+makeBill codeList = [lookup n | n<-codeList ] 
+
+--6.29
+
+example2 :: [(Name, Price)]
+example2 =[("Fish Fingers", 1231), ("Dry Sherry, 1lt", 540), ("Nappies" , 1010),("Orange Jelly", 56), ("Dry Sherry, 1lt", 540)]
+
+makeDiscount:: BillType -> Int
+makeDiscount bill= n*100
+  where 
+  n= length [("Dry Sherry, 1lt", 540) | ("Dry Sherry, 1lt", 540) <- bill]
+  
+formatDiscount :: Price -> String
+formatDiscount discount= "\nDiscount" ++ (whiteLine n)++(formatPence discount)++"\n"
+ where
+ n=lineLength - 8 - (length (formatPence discount))
+
+formatBillBetter :: BillType -> String
+formatBillBetter list = "\tHaskell Store\n\n"++(formatLines list)++(formatDiscount(makeDiscount list))++(formatTotal((makeTotal list) - (makeDiscount list)))
+
+--6.30
+
+removeCode :: BarCode -> DatabaseSL -> DatabaseSL
+removeCode code dBase = [(c,n,p) |(c,n,p) <- dBase, c/=code ] 
+
+exnew1::(BarCode, Name, Price)
+exnew1= (4719, "Balls" , 221)
+
+exnew2::(BarCode, Name, Price)
+exnew2= (4712, "Bigger Balls" , 2281)
+
+newCode :: (BarCode, Name, Price) -> DatabaseSL
+newCode (c,n,p) = [(c,n,p)]++(removeCode c codeIndex)
+
+--6.31
+
+lookmod:: DatabaseSL -> BarCode -> [(Name, Price)]
+lookmod dBase findCode = [(name, price) | (code, name, price) <-dBase, code==findCode]
+
+makeBillmodHelper:: TillType -> Int -> BillType
+makeBillmodHelper codelist (-1) =[]
+makeBillmodHelper codelist n= (makeBillmodHelper codelist (n-1)) ++ (lookmod codeIndex (codelist!!n))
+
+makeBillmod :: TillType -> BillType
+makeBillmod codeList = makeBillmodHelper codeList ((length codeList)-1)
