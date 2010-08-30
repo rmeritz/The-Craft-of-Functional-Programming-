@@ -56,8 +56,19 @@ nomatchelemNum y list = length [x | x <-list, id x == y]
 
 --7.7
 
+nomatchunique :: [Int] -> [Int]
+nomatchunique list = [x | x <- list, elemNum x list==1]
+
+remove :: Int -> [Int] -> [Int]
+remove y [] = []
+remove y (x:xs) 
+  |y/=x = x:(remove y xs)
+  |otherwise = remove y xs
+  
 unique :: [Int] -> [Int] 
 unique [] = []
 unique (x:xs)
-  |elemNum x (x:xs) ==1 && (elemNum x (unique (xs)) ==0) = x:unique xs
-  |otherwise = unique xs
+  |elemNum x xs ==0 = x:(unique xs)
+  |otherwise = unique (remove x xs)
+  
+ 
