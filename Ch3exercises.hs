@@ -2,7 +2,7 @@
 
 module Ch3exercises where
 
-import Prelude hiding (min)
+import Prelude hiding (min, lookup)
 
 --3.1
 

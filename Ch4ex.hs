@@ -50,7 +50,7 @@ fourEqual m n p q = (m==n) && (m==p) && (m==q)
 howManyOfFourEqual :: Int-> Int -> Int -> Int -> Int
 howManyOfFourEqual a b c d
 	|fourEqual a b c d			                       =4
-	|threeEqual a b c || threeEqual b c d || threeEqual c d a      =3
+	|threeEqual a b c || threeEqual b c d || threeEqual c d a || threeEqual d a b      =3
 	|twoEqual a b || twoEqual b c || twoEqual c d ||twoEqual d a   =2
 	|otherwise				                       =0
 
