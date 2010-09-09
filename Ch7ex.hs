@@ -81,7 +81,6 @@ unzip :: [(a,b)] -> ([a],[b])
 unzip [] = ([],[])
 unzip ((x,y):ps) = (x:xs,y:ys)
   where (xs,ys)=unzip ps  
---I don't really understand this one.
 
 --7.9
 
@@ -135,20 +134,17 @@ iSortNoDuplicate  []     = []
 iSortNoDuplicate  (x:xs) = insRemove x (iSortNoDuplicate  xs)
 
 --7.13
-{-want to talk in person
- --(x,y):(z,w):[(zs,ws)]
 
 insPair :: (Int, Int) -> [(Int, Int)] -> [(Int, Int)]
 insPair (x,y) [] = [(x,y)]
-insPair (x,y) (z,w):[(zs,ws)]
- |x < z = (x,y):(z,w):[(zs,ws)]
- |(x == z) && (y < w ) = (x,y):(z,w):(zs,ws)
- |otherwise = (z,w): (insPair (x,y) (zs,ws))
+insPair (x,y) ((z,w):ps)
+ |x < z = (x,y):(z,w):ps
+ |(x == z) && (y < w ) = (x,y):(z,w):ps
+ |otherwise = (z,w): insPair (x,y) ps
 
 pairISort :: [(Int, Int)] -> [(Int, Int)]
 pairISort []     = [] 
-pairISort (x,y):[(xs,ys)] = insPair (x,y) (pairISort [(xs,ys)])
--}
+pairISort (p:ps) = insPair p (pairISort ps)
 
 --7.14
 
@@ -187,11 +183,12 @@ zip3:: [a] -> [b] -> [c] -> [(a,b,c)]
 zip3 (x:xs) (y:ys) (z:zs) = (x,y,z):zip3 xs ys zs
 zip3 _ _ _ = []
 
---want to talk with you actually 
-{-Even more issues making zip3 using zip
+
 nomatchzip3 ::[a] -> [b] -> [c] -> [(a,b,c)]
-nomatchzip3 x y z = (((zip x y)!!1), (z!!1))
--}
+nomatchzip3 x y z = format( zip x (zip y z))
+  where
+  format [] = []
+  format ((a,(b,c)):ps) = (a,b,c): format ps
 
 --7.17
 
@@ -218,49 +215,20 @@ sublist :: (Eq a)=> [a] -> [a] -> Bool
 sublist [] ys = True
 sublist (x:xs) ys = (isElementOf x ys) && (sublist xs ys)
 
---whichElement :: (Eq a)=> a ->[a] -> Int -> Int  
+whichElement :: (Eq a)=> a ->[a] -> Int -> Int  
 whichElement _ [] _ = 0
 whichElement e (x:xs) n
   |e==x = n
   |otherwise = whichElement e xs (n+1)
-{-}
---maybe instead of what I currently have for options I got use the splitAt functiont to divide the list into seperate lists and compare them 
 
---options produces an infinate loop
---is it bc n and p are defined in terms of each other
---I thought you could do this like you do for odd and even      
---options :: a -> [a] -> [a]
-options _ []= []
-options e xs 
-  |p==0 = []
-  |p/=0 = n : options e n
-  where
-  n=(drop p xs)
-  p=(whichElement e n 0)
--}   
+
 subsequenceHelper [] _ = True 
 subsequenceHelper _ [] = False
 subsequenceHelper (x:xs) (y:ys) = (x==y) && (subsequenceHelper xs ys)
 
-{-
---subsequence :: [a] -> [a] -> Bool
---only works is first occurance of x is where subsquence is 
-subsequence (x:xs) ys
-  |sublist (x:xs) ys = subsequenceHelper (x:xs) (drop (whichElement x ys 0) ys)
-  |otherwise =False 
-
---so even if I had a working options function I'm not sure how to right a program to effectively us it
-subsequence (x:xs) ys
-  |n /= [] = subsequenceHelper (x:xs) head n ++  
-  |otherwise =False 
-  where 
-  n = options x ys
-  l=(length (options x ys)-1) 
--}
--- I have a working subsequnce though I'd still like to know how to make my other idea work 
+ 
 subsequence _ []= False
-subsequence xs (y:ys) = subsequenceHelper xs (y:ys) || subsequence xs ys 
-
+subsequence xs ps@(y:ys) = subsequenceHelper xs ps || subsequence xs ys 
   
 --7.19
 
@@ -328,19 +296,18 @@ splitLines ws = getLine lineLen ws : splitLines (dropLine lineLen ws)
 
 --7.20
 
---Is there another way to eliminate the space at the end of the line? Do I have to use a helper function to look at the length?
-joinLineHelper :: Line -> Int-> String 
-joinLineHelper [] _ = ""
-joinLineHelper (w:ws) n 
-  |n> 1 =  w ++ " " ++joinLineHelper ws (n-1)
-  |otherwise = w
-  
 joinLine :: Line -> String 
-joinLine line =  joinLineHelper line l 
-  where
-  l = length line
-
+joinLine []  = ""
+joinLine [w] = w
+joinLine (w:ws)=  w ++ " " ++joinLine ws
+ 
 --7.21
+
+--same as function intersperse 
+intercalate :: String ->  [String] -> String
+intercalate _ [] = ""
+intercalate _ [x] = x
+intercalate joiner (x:xs) = x ++ joiner ++ (intercalate joiner xs) 
 
 joinLines :: [Line] -> String
 joinLines [] = ""
@@ -350,24 +317,28 @@ joinLines (l:ls) = joinLine l ++"\n"++ joinLines ls
 --Redine functions so they work like splitAt instead of take and drop but I need to unserstand splitAt first
 
 --7.23
---its almost correct but not quiet it puts too many gaps after the first word
---the line length isn't always right either
---I think the concept it sound though
---also doesn't work is only one word in line
+
+joinSpaces :: [String] -> String
+joinSpaces [] = ""
+joinSpaces (x:xs) = x++ joinSpaces xs 
 
 joinLineJustifyHelper :: Int -> Int -> Int -> Int -> Line -> String
 joinLineJustifyHelper e n ee nw (w:ws)
  |nw==1 = w  
- |(ee>= 1)= w ++ (joinLine (replicate ss " "))++ joinLineJustifyHelper e n (ee-1) (nw-1) ws
- |otherwise  = w ++ (joinLine (replicate s " "))++ joinLineJustifyHelper e n 0 (nw-1) ws 
+ |(ee>= 1)= w ++ (joinSpaces (replicate ss " "))++ joinLineJustifyHelper e n (ee-1) (nw-1) ws
+ |otherwise  = w ++ (joinSpaces (replicate s " "))++ joinLineJustifyHelper e n 0 (nw-1) ws 
   where
   s = (e `div` n)   
   ss = s+1
 
+charsInLine :: Line -> Int 
+charsInLine [] = 0 
+charsInLine (x:xs) = length x + charsInLine xs   
+
 joinLineJustify :: Line -> String
 joinLineJustify lns = joinLineJustifyHelper whiteSpacesTotal numberOfGaps extraWhiteSpaces numberOfWords lns 
   where 
-  whiteSpacesTotal= lineLen - (length (joinLine lns)) + numberOfGaps 
+  whiteSpacesTotal= lineLen - (charsInLine lns)
   numberOfGaps= numberOfWords - 1 
   extraWhiteSpaces = whiteSpacesTotal `mod` numberOfGaps 
   numberOfWords = length lns 
@@ -403,8 +374,7 @@ wcFormat :: String -> (Int, Int, Int)
 wcFormat str = (numberOfChars str 0, numberOfWords str, numberOfLinesFormat str)
 
 --7.25
----if I put ''' in charctures I get an error, how can I account fot ', I guess I could look up its ord?
-charctures = ['!','-', ':', ';', '.', '"', '`', ',', '?']
+charctures = ['!','-', ':', ';', '.', '"', '`', ',', '?', '\'']
 
 ord :: Char -> Int
 ord  =  fromEnum
@@ -434,15 +404,12 @@ isPalin str = isPalinHelper newstr l
   l= length newstr
 
 --7.26
-
  
 --Example data
 st, oldSub, newSub :: String 
 st= "How tall is that?"
 oldSub = "tall is"
 newSub = "much toothpaste"
-
---Works if old is a word, but doesn't work for any string
 
 subsitute :: [Word] -> Word -> Word -> [Word]
 subsitute [] _ _ = []
@@ -462,15 +429,12 @@ subsequenceLocation old (s:ss) n
   |otherwise = subsequenceLocation old ss (n+1) 
 
 frt (x,y) = x
-
 scd(x,y)=y
-
---the type of restOfList  is [String] not String. How do I fix?
 
 subSt :: String -> String -> String -> String
 subSt "" _ _ = ""
 subSt st o n  
-  |length locate > 0 = beginning ++ n ++ subSt(restOfList o n)
+  |length locate > 0 = beginning ++ n ++ (subSt restOfList o n)
   |otherwise = st
   where 
   locate = subsequenceLocation o st 1
