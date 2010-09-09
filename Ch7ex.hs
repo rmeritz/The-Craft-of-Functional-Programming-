@@ -1,7 +1,7 @@
 --The Craft of Functional Programming 
 --Ch. 7 Defining Functions Over Lists
 
-import Prelude hiding (product, and, or, reverse, unzip, drop, take, zip3,getLine)
+import Prelude hiding (product, and, or, reverse, unzip, drop, take, zip3,getLine, splitAt)
 
 --7.1
 
@@ -154,17 +154,14 @@ drop n (x:xs)
   |n>0 = drop (n-1) xs
   |n==0 =(x:xs)
   |n<0 = error "PreludeList.drop: negative argument"
-
---want to talk with you actualy
-{-More issues with reccursion on paired types
+  
 splitAt ::Int -> [a] -> ([a],[a])
 splitAt _ [] = ([],[])
-splitAt _ [x] = ([x],[])
-splitAt n (x:xs)
-  |n > 0 = (x,(splitAt (n-1) xs)) 
-  |n<=0 = ([],(x:xs))
--}
-
+splitAt 0 ps = ([], ps)
+splitAt n (x:xs) = ((x:rest), end)
+  where
+  (rest, end) = splitAt (n-1) xs
+  
 --7.15
 
 take :: Int -> [a] -> [a]
