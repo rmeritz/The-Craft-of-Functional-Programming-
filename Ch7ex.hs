@@ -1,6 +1,8 @@
 --The Craft of Functional Programming 
 --Ch. 7 Defining Functions Over Lists
 
+module Ch7ex where
+
 import Prelude hiding (product, and, or, reverse, unzip, drop, take, zip3,getLine, splitAt)
 
 --7.1

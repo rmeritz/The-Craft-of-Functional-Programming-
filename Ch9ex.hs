@@ -2,6 +2,8 @@
 --Ch. 9 Generalization: Patterns of Computation 
 
 import Prelude hiding (length)
+import Ch7ex hiding (and)
+
 --9.1
 {-
 by primative recursion 
@@ -34,65 +36,78 @@ double 2 : double 1 : double 7 : []
 length :: [a] -> Int 
 length xs = sum (map ones xs)
 	where
+	ones :: a -> Int
 	ones _ = 1 
 
 --9.3
-
+greaterOne :: Int -> Bool 
 greaterOne n = n>1 
+
+addOne :: Int -> Int
 addOne n = n+1 
 
---addUp ns = filter greaterOne (map addOne ns)
+addUp :: [Int] -> [Int]
+addUp ns = filter greaterOne (map addOne ns)
 	
-addUp ns = map addOne (filter greaterOne  ns)	
+addUp1 :: [Int] -> [Int]	
+addUp1 ns = map addOne (filter greaterOne  ns)	
 
 --9.4
-
+nineFour :: [Int] -> [Int]
 nineFour ns = map addOne (map addOne ns)
 
 --9.5
 
+lessTen :: Int -> Bool
 lessTen n = n<10
 
+nineFive :: [Int] -> [Int]
 nineFive ns = filter greaterOne (filter lessTen ns)
  
 --9.6
 
+squares :: [Int] -> [Int]
 squares xs = (map sq xs)
-	where sq x = x*x
+	where
+	sq :: Int -> Int 
+	sq x = x*x
 
+sumSq :: [Int] -> Int
 sumSq xs = sum (squares xs)
 
+greaterZero :: Int -> Bool  
 greaterZero n = n > 0 
 
+posList :: [Int] -> [Int]
 posList xs = filter greaterZero xs
 	
 --9.7
---Nothing Works. I think I'm missing some key concept. 
 
-minReturn f n = min (map f [0..n])
---how do I map over a function w/ more than one argurement? Should I be mapping? min isn't of the right type to be solving this problem.  	  
-   	  
-allEqualReturn (x:xs) =  map (&&) (map (==x) xs)
---Also, I thought there was a bulit in funtion add that performs map (&&) but I cannot find it?
+--map :: (a -> b) -> [a] -> [b]
+--filter :: (a -> bool) -> [a] -> [a] 
+--zipWidth :: (a -> b_-> c) -> [a] -> [b] -> [c]
 
-posReturn f n = (filter greaterZero (map f [0..n])) == (map f [0..n])
+minList :: [Int] -> Int 
+minList [x] = x
+minList (x:xs)
+	|x < minList xs = x
+	|otherwise = minList xs 
 
-iSort :: [Int] -> [Int]
-iSort []     = [] 
-iSort (x:xs) = ins x (iSort xs) 
+minReturn :: (Int -> Int) -> Int -> Int 
+minReturn f n = minList (map f [0..n])
+--Is there a way to replace minList with higher-order function? All of the higher order functions return a list and I want tp return a value. But could I somehow return a list of only one element and then give that element? I could filter with x< but I would need to update x. How could I do that? Or I could compare two lists with zipWidth one having the min and the other the rest of the list. But again the lists would have to be updated. 
 
-ins :: Int -> [Int] -> [Int]
-ins x []    = [x] 
-ins x (y:ys) 
-  | x <= y      = x:(y:ys)
-  | otherwise   = y : ins x ys
+allEqual :: (Int -> Int) -> Int -> Bool
+allEqual f n = and (map (==(f 0)) (map f [0..n]))
 
-isSorted xs = (xs== iSort xs)
+posReturn :: (Int -> Int) -> Int -> Bool 
+posReturn f n = length (map (>0) (map f [0..n])) == length (map f [0..n])		 
+--Is there a better way to do this than with the length function?
 
-sortReturn f n = isSorted (map f [0..n])
+isSorted :: [Int] -> Bool 
+isSorted xs = (xs == iSort xs)
 
-posSortedReturn xs = sortReturn xs && posReturn xs 
-	
-	
+isSortedAndPosReturn :: (Int -> Int) -> Int -> Bool 
+isSortedAndPosReturn f n = (posReturn f n) && (isSorted (map f [0..n])) 
 
-	 
+ 
