@@ -253,4 +253,53 @@ x:xs                                                 by(hyp)
 x:xs
 -}
 
+--8.9
+
+{-Prove
+rev (xs ++ ys) = rev xs ++ rev ys
+	
+shunt []     ys = ys				       (shunt.1)
+shunt (x:xs) ys = shunt xs (x:ys) 		   (shunt.2)
+
+rev xs = shunt xs []				       (rev.1)
+
+(base)
+rev ([] ++ ys)                             
+rev (ys)                                   (++.1)
+shunt ys []                                (rev.1)
+
+rev [] ++ rev ys                  
+shunt [] [] ++ shunt ys []                 (rev.1)
+[] ++ shunt ys []                          (shunt.1)
+shunt ys []                                (++.1)
+
+(induction)
+rev ((x:xs) ++ ys)                         
+rev (x:(xs++ys))                           (++.2)                 
+shunt (x:(xs++ys)) []                      (rev.1)
+shunt (xs++ys) [x]                         (shunt.2)
+
+rev (x:xs) ++ rev ys 
+shunt (x:xs) [] ++ shunt ys []             (rev.1)
+shunt xs [x] ++ shunt ys []                (shunt.2)
+
+Induction doesn't work must generalize proof goal.
+How do I do this?
+}
+
+--8.10
+
+{-Prove
+fac n = fac2 n                             (hyp)
+
+fac2 n = facAux n 1                        (fac2.1)
+
+facAux 0 p = p                             (facAux.1)
+facAux n p = facAux (n-1) (n*p)            (facAus.2)
+
+Same problem as 8.9
+}
+
+
+
 
