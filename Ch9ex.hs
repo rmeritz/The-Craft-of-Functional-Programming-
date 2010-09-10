@@ -1,7 +1,7 @@
 --The Craft of Functional Programming 
 --Ch. 9 Generalization: Patterns of Computation 
 
-import Prelude hiding (length)
+import Prelude hiding (length, last, init)
 import Ch7ex hiding (and)
 
 --9.1
@@ -85,7 +85,7 @@ posList xs = filter greaterZero xs
 
 --map :: (a -> b) -> [a] -> [b]
 --filter :: (a -> bool) -> [a] -> [a] 
---zipWidth :: (a -> b_-> c) -> [a] -> [b] -> [c]
+--zipWith :: (a -> b_-> c) -> [a] -> [b] -> [c]
 
 minList :: [Int] -> Int 
 minList [x] = x
@@ -110,4 +110,45 @@ isSorted xs = (xs == iSort xs)
 isSortedAndPosReturn :: (Int -> Int) -> Int -> Bool 
 isSortedAndPosReturn f n = (posReturn f n) && (isSorted (map f [0..n])) 
 
+--9.8
+
+twice :: (Int -> Int) -> Int -> Int
+twice f n = f (f n)   
+
+--9.9
  
+iter :: Int -> (a -> a) -> a -> a
+iter n f x 
+	|n ==0 = x
+    |n ==1 = f x 
+	|n > 1 = iter (n-1) f (f x)      
+
+--9.10
+
+double = (2*)
+
+twoToTheN :: Int -> Int 
+twoToTheN n = iter (n-1) double 2 
+ 
+ --9.11
+ 
+--foldr1 :: (a -> a -> a) -> [a] -> a 
+--foldr :: (a -> b -> b) -> b -> [a] -> b
+ 
+sumSqs :: Int -> Int 
+sumSqs n = foldr (+) 0 (map (2^) [1..n])
+
+--9.12
+ 	
+sumPosIntSq :: [Int] -> Int 
+sumPosIntSq xs = foldr1 (+) (map (2^) (filter (>=0) xs)) 	
+
+--9.13
+
+unZip :: [(a,b)] -> ([a],[b])
+unZip list = (foldr (:) [] (map frt list) , foldr (:) [] (map scd list)) 
+
+--last :: [a] -> [a]
+
+--init :: [a] -> [a]
+
