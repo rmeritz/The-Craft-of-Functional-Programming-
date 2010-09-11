@@ -1,8 +1,9 @@
 --The Craft of Functional Programming 
 --Ch. 9 Generalization: Patterns of Computation 
 
-import Prelude hiding (length, last, init)
-import Ch7ex hiding (and)
+import Prelude hiding (length, last, init, lookup)
+import Ch7ex hiding (and, drop, take, splitAt, reverse, take)
+import Ch5ex hiding (returnLoan)
 
 --9.1
 {-
@@ -134,6 +135,7 @@ twoToTheN n = iter (n-1) double 2
  
 --foldr1 :: (a -> a -> a) -> [a] -> a 
 --foldr :: (a -> b -> b) -> b -> [a] -> b
+		--(Int -> [a]-> [a]) -> Int -> [a] -> 
  
 sumSqs :: Int -> Int 
 sumSqs n = foldr (+) 0 (map (2^) [1..n])
@@ -148,7 +150,187 @@ sumPosIntSq xs = foldr1 (+) (map (2^) (filter (>=0) xs))
 unZip :: [(a,b)] -> ([a],[b])
 unZip list = (foldr (:) [] (map frt list) , foldr (:) [] (map scd list)) 
 
---last :: [a] -> [a]
+--foldr f s [] = s
+--foldr f s (x:xs) = f x (foldr s xs)
 
---init :: [a] -> [a]
+last :: [a] -> a
+--last [x] = x
+--last (x:xs) = last xs 
 
+--last list = head (drop n list) 
+--	where 
+--	n = length list -1  
+
+--last list = head (iter (length list-1) (drop 1) list)
+
+--last list = head (reverse list) 
+
+snoc :: a -> [a] -> [a]
+snoc x xs = xs ++ [x] 
+
+last list = head (foldr snoc [] list) 
+--Goal of exercise was to use foldr. Is there a more direct way to do this?
+
+init :: [a] -> [a]
+--init [x] = []
+--init (x:xs) = x: init xs
+
+--init list = frt(splitAt (length list - 1) list)
+
+init list = take (length list - 1) list
+
+--Also, goal is to write w/foldr. I don't see this, just lots of other ways. 
+
+--9.14
+
+mystery :: [a] -> [a]
+mystery xs = foldr (++) [] (map sing xs)
+	where 
+	sing x = [x]
+
+--returns id
+
+--9.15
+
+--formatList :: (a -> String) -> [a -> String 
+--The book wants me to make a program as typed above and use it to make formatLines. I cannot figure out the point of this function. 
+
+formatLine :: Line -> String 
+formatLine ln = (foldr (++) [] (map (++" ") (init ln))) ++ last ln  
+
+formatLines :: [Line] -> String 
+formatLines lns = foldr (++) [] (map (++"\n") (map formatLine lns)) 
+
+--9.16
+
+filterFirst :: (a -> Bool) -> [a] -> [a]
+filterFirst p [] = []
+filterFirst p (x:xs) 
+	|p x = x : filterFirst p xs
+	|otherwise = xs
+	
+returnLoan :: Database -> Person -> Book -> Database
+--returnLoan dBase pers bk = [pair | pair <-dBase, pair /=(pers, bk)]
+returnLoan dBase per bk = filterFirst ((per,bk)/=) dBase	
+
+--9.17
+
+filterLast :: (a -> Bool) -> [a] -> [a]
+filterLast p list = reverse (filterFirst p (reverse list))
+
+--How to do this w/o filterFirst?
+
+--9.18
+--Redo Supermarket Billing using higher order functions
+
+type Name = String
+type Price = Int
+type BarCode = Int
+type TillType = [BarCode]
+type BillType = [(Name, Price)]
+type DatabaseSL = [(BarCode, Name, Price)]
+
+codeIndex :: DatabaseSL
+codeIndex = [ (4719, "Fish Fingers" , 121),
+              (5643, "Nappies" , 1010),
+              (3814, "Orange Jelly", 56),
+              (1111, "Hula Hoops", 21),
+              (1112, "Hula Hoops (Giant)", 133),
+              (1234, "Dry Sherry, 1lt", 540)]
+
+lineLength :: Int
+lineLength = 30
+
+formatPence :: Price -> String
+formatPence price 
+  |digits ==4 = frt(splitAt 2 (show price)) ++ "." ++ scd (splitAt 2 (show price))
+  |digits ==3 = frt(splitAt 1 (show price)) ++ "." ++ scd (splitAt 1 (show price))
+  |digits ==2 = "."++ (show price)
+  |digits ==1 = ".0"++(show price)
+  where 
+  digits = length (show price)
+
+formatLineBill :: (Name, Price) -> String
+formatLineBill (name, price) = name ++ (foldr (++) [] (replicate n ".")) ++ (formatPence price) ++ "\n"
+	where
+	n=lineLength - (length name) - (length (formatPence price))  
+  
+example :: [(Name, Price)]
+example =[("Fish Fingers", 1231), ("Nappies" , 1010),("Orange Jelly", 56)]
+
+formatLinesBill :: [(Name, Price)] -> String
+formatLinesBill list = foldr (++) [] (map formatLineBill list)
+
+makeTotal :: BillType -> Price
+makeTotal list = foldr (+) 0 (map scd list)
+
+formatTotal :: Price -> String
+formatTotal total= "\nTotal" ++ (foldr (++) [] (replicate n ".")) ++ (formatPence total)
+ where
+ n=lineLength - 5 - (length (formatPence total))
+
+formatBill :: BillType -> String
+formatBill list = "\tHaskell Store\n\n"++(formatLinesBill list)++(formatTotal(makeTotal list))
+
+frt3 :: (a,b,c) -> a
+frt3 (x,_,_) = x
+
+scd3 :: (a,b,c) -> (b,c)
+scd3 (_,x,y) = (x,y)
+
+lookup :: BarCode -> (Name, Price)
+lookup code
+	|(filter findCode codeIndex)== [] = ("Unknown Item", 0)
+	|otherwise = head(map scd3 (filter findCode codeIndex)) 
+	where
+	findCode :: (BarCode, Name, Price) -> Bool
+	findCode x = code == frt3 x
+
+exampleTill :: TillType
+exampleTill = [1111, 1110, 1112]
+
+makeBill :: TillType -> BillType
+makeBill codeList = map lookup codeList 
+
+example2 :: [(Name, Price)]
+example2 =[("Fish Fingers", 1231), ("Dry Sherry, 1lt", 540), ("Nappies" , 1010),("Orange Jelly", 56), ("Dry Sherry, 1lt", 540)]
+
+makeDiscount:: BillType -> Int
+makeDiscount bill= n*100
+  where 
+  n= (length (filter (("Dry Sherry, 1lt", 540)==) bill)) `div` 2 
+  
+formatDiscount :: Price -> String
+formatDiscount discount= "\nDiscount" ++ (foldr (++) [] (replicate n "."))++(formatPence discount)++"\n"
+ where
+ n=lineLength - 8 - (length (formatPence discount))
+
+formatBillBetter :: BillType -> String
+formatBillBetter list = "\tHaskell Store\n\n"++(formatLinesBill list)++(formatDiscount(makeDiscount list))++(formatTotal((makeTotal list) - (makeDiscount list)))
+
+removeCode :: BarCode -> DatabaseSL -> DatabaseSL
+removeCode code dBase = filter delete dBase
+	where
+	delete x = code/= frt3 x 
+
+exnew1::(BarCode, Name, Price)
+exnew1= (4719, "Balls" , 221)
+
+exnew2::(BarCode, Name, Price)
+exnew2= (4712, "Bigger Balls" , 2281)
+
+newCode :: (BarCode, Name, Price) -> DatabaseSL
+newCode index = index : (removeCode (frt3 index) codeIndex)
+
+{-Still needs to be rewritten
+
+lookmod:: DatabaseSL -> BarCode -> [(Name, Price)]
+lookmod dBase findCode = [(name, price) | (code, name, price) <-dBase, code==findCode]
+
+makeBillmodHelper:: TillType -> Int -> BillType
+makeBillmodHelper codelist (-1) =[]
+makeBillmodHelper codelist n= (makeBillmodHelper codelist (n-1)) ++ (lookmod codeIndex (codelist!!n))
+
+makeBillmod :: TillType -> BillType
+makeBillmod codeList = makeBillmodHelper codeList ((length codeList)-1)
+-} 
