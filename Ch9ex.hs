@@ -467,5 +467,4 @@ getLine len (w:ws)
 --dropLine :: [[a]] -> [[a]]
 
 --splitLines :: [Word] -> [Line] 
---splitLines :: [[a]] -> [[[a]]]
-			
+--splitLines :: [[a]] -> [[[a]]]			

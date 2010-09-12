@@ -1,6 +1,9 @@
 --The Craft of Functional Programming 
 --Ch. 6 Programming with Lists
 
+
+module Ch6ex where
+
 import Prelude hiding (lookup)
 import Ch5ex 
 
