@@ -1,8 +1,8 @@
 --The Craft of Functional Programming 
 --Ch. 9 Generalization: Patterns of Computation 
 
-import Prelude hiding (length, last, init, lookup)
-import Ch7ex hiding (and, drop, take, splitAt, reverse, take)
+import Prelude hiding (length, last, init, lookup, takeWhile, getLine)
+import Ch7ex hiding (and, drop, take, splitAt, reverse, take, dropWord, dropSpace, splitWords, getWord, getLine, dropLine)
 import Ch5ex hiding (returnLoan)
 
 --9.1
@@ -322,15 +322,150 @@ exnew2= (4712, "Bigger Balls" , 2281)
 newCode :: (BarCode, Name, Price) -> DatabaseSL
 newCode index = index : (removeCode (frt3 index) codeIndex)
 
-{-Still needs to be rewritten
-
-lookmod:: DatabaseSL -> BarCode -> [(Name, Price)]
-lookmod dBase findCode = [(name, price) | (code, name, price) <-dBase, code==findCode]
-
-makeBillmodHelper:: TillType -> Int -> BillType
-makeBillmodHelper codelist (-1) =[]
-makeBillmodHelper codelist n= (makeBillmodHelper codelist (n-1)) ++ (lookmod codeIndex (codelist!!n))
+lookmod:: BarCode -> (Name, Price)
+lookmod code
+--	|(filter findCode codeIndex)== [] = ( , )
+	|otherwise = head(map scd3 (filter findCode codeIndex)) 
+	where
+	findCode :: (BarCode, Name, Price) -> Bool
+	findCode x = code == frt3 x
+--What do to make the fucntion return nothing if there is no matching code?
 
 makeBillmod :: TillType -> BillType
-makeBillmod codeList = makeBillmodHelper codeList ((length codeList)-1)
--} 
+makeBillmod codeList = map lookmod codeList 
+
+--9.20
+
+dropUntil :: (a -> Bool) -> [a] -> [a]
+dropUntil p [] = []
+dropUntil p (x:xs)
+	|p x = dropUntil p xs
+	|otherwise = (x:xs)
+
+notWhiteSpace :: Char -> Bool 
+notWhiteSpace chr = not (elem chr whitespace) 
+
+dropWord :: String -> String 
+dropWord str = dropUntil notWhiteSpace str
+
+--9.21
+
+isWhiteSpace :: Char -> Bool 
+isWhiteSpace chr = elem chr whitespace
+ 
+dropSpace :: String -> String
+dropSpace str = dropUntil isWhiteSpace str 
+
+getUntil :: (a -> Bool) -> [a] -> [a]
+getUntil p [] = []
+getUntil p (x:xs)
+	| p x = []
+	|otherwise = x: getUntil p xs
+
+takeWhile :: (a -> Bool) -> [a] -> [a]
+takeWhile p [] = []
+takeWhile p (x:xs)
+	|p x = x: takeWhile p xs
+	|otherwise = []
+
+{-
+takeWhile :: (a -> Bool) -> [a] -> [a]
+takeWhile p [] = []
+takeWhile p (x:xs)
+	|getUntil p [x] ==[] = x :takeWhile p xs
+	|otherwise = []
+--Trouble defining takeWhile w/getUntil 
+-}
+
+--9.22
+
+getWord :: String -> Word
+getWord xs = getUntil p xs 
+	where 
+	p x = elem x whitespace
+
+splitWords :: String -> [Word]
+splitWords [] = [] 
+splitWords st = (getWord st): splitWords (dropSpace (dropWord st))
+{-
+{-Old defintion 
+getLine :: Int -> [Word]-> Line
+getLine len [] = []
+getLine len (w:ws)
+  |length w <=len = w: restOfLine
+  |otherwise = []
+  where
+  newlen = len - (length w + 1)
+  restOfLine = getLine newlen ws
+-}
+--Want to redefine getLine with getUntil, but having trouble defining spaceLeftInLine. How do I get the list of wordsUsed?  
+getLine :: [Word]-> Line
+getLine wds@(w:ws) = getUntil (w <=spaceLeftInLine) wds
+	where
+	spaceLeftInLine = lineLen - spaceUsed
+	spaceUsed = charsUsed + spacesUsed
+	charsUsed = sum (map length wordsUsed) 
+	spacesUsed = length wordsUsed
+ 
+
+{-Old defintion    
+dropLine :: Int ->  [Word] -> Line
+dropLine _ [] = []
+dropLine len (w:ws)
+  |length w <=len = restOfLines
+  |otherwise = (w:ws)
+  where 
+  newlen = len - (length w +1)
+  restOfLines = dropLine newlen ws 
+-}
+--same issues as attempt to redine getLine
+dropLine :: [Word] -> Line
+dropLine wds@(w:ws) = dropUntil (w <=spaceLeftInLine) wds
+	where
+	spaceLeftInLine = lineLen - spaceUsed
+	spaceUsed = charsUsed + spacesUsed
+	charsUsed = sum (map length wordsUsed) 
+	spacesUsed = length wordsUsed
+
+--test values
+lineLen:: Int
+lineLen = 15  
+
+ln ::[Word]
+ln = ["1", "234", "567", "8901234", "56"]
+
+someWords :: [Word]
+someWords =["I", "am", "not", "a", "very", "good", "typer", "but", "I", "need", "to", "type", "a", "lot", "to", "test", "my", "haskell", "program"]
+  
+splitLines :: [Word] -> [Line] 
+splitLines [] = []
+splitLines ws = getLine ws : splitLines (dropLine ws) 	
+
+-}
+
+--9.22
+
+--getLine from Ch7ex is polymorphic it was orginally typed as 
+--getLine :: Int -> [Word]-> Line
+--is can be typed most broadly as
+--getLine :: Int -> [[a]] -> [[a]]
+getLine len [] = []
+getLine len (w:ws)
+  |length w <=len = w: restOfLine
+  |otherwise = []
+  where
+  newlen = len - (length w + 1)
+  restOfLine = getLine newlen ws
+
+--exampleOfTest 5 [[1], [1,2,3], [12,32,12], [2]]
+
+--9.23
+
+--generalization of types
+
+--dropLine :: [Word] -> Line
+--dropLine :: [[a]] -> [[a]]
+
+--splitLines :: [Word] -> [Line] 
+--splitLines :: [[a]] -> [[[a]]]
+			
