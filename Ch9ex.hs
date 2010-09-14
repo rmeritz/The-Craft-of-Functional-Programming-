@@ -93,16 +93,27 @@ minList [x] = x
 minList (x:xs)
 	|x < minList xs = x
 	|otherwise = minList xs 
+	
 
 minReturn :: (Int -> Int) -> Int -> Int 
 minReturn f n = minList (map f [0..n])
---Is there a way to replace minList with higher-order function? All of the higher order functions return a list and I want tp return a value. But could I somehow return a list of only one element and then give that element? I could filter with x< but I would need to update x. How could I do that? Or I could compare two lists with zipWidth one having the min and the other the rest of the list. But again the lists would have to be updated. 
+
+minReturnA :: (Int -> Int) -> Int -> Int 
+minReturnA f n = foldr1 minListA (map f [0..n])
+	where 
+	minListA :: Int -> Int -> Int
+	minListA x y
+		|x < y = x
+		|otherwise = y 
+
+--write out calculation later		
 
 allEqual :: (Int -> Int) -> Int -> Bool
 allEqual f n = and (map (==(f 0)) (map f [0..n]))
 
 posReturn :: (Int -> Int) -> Int -> Bool 
-posReturn f n = length (map (>0) (map f [0..n])) == length (map f [0..n])		 
+--posReturn f n = and (map (>0) (map f [0..n]))	
+posReturn f n = and (map ((>0).f) [0..n]) 	 
 --Is there a better way to do this than with the length function?
 
 isSorted :: [Int] -> Bool 
@@ -135,7 +146,6 @@ twoToTheN n = iter (n-1) double 2
  
 --foldr1 :: (a -> a -> a) -> [a] -> a 
 --foldr :: (a -> b -> b) -> b -> [a] -> b
-		--(Int -> [a]-> [a]) -> Int -> [a] -> 
  
 sumSqs :: Int -> Int 
 sumSqs n = foldr (+) 0 (map (2^) [1..n])
@@ -168,8 +178,16 @@ last :: [a] -> a
 snoc :: a -> [a] -> [a]
 snoc x xs = xs ++ [x] 
 
-last list = head (foldr snoc [] list) 
---Goal of exercise was to use foldr. Is there a more direct way to do this?
+--last list = head (foldr snoc [] list) 
+
+--last list = foldr1 k list
+--	where
+--	k :: a -> a -> a 
+--	k x y = y 
+	
+last list = foldr1 (\x y -> y) list
+	
+--calcuation writting party
 
 init :: [a] -> [a]
 --init [x] = []
@@ -177,9 +195,11 @@ init :: [a] -> [a]
 
 --init list = frt(splitAt (length list - 1) list)
 
-init list = take (length list - 1) list
+--init list = take (length list - 1) list
 
---Also, goal is to write w/foldr. I don't see this, just lots of other ways. 
+--init list = reverse (drop 1 (reverse list))
+
+init list = foldr snoc [] (drop 1 (foldr snoc [] list))  
 
 --9.14
 
@@ -191,10 +211,7 @@ mystery xs = foldr (++) [] (map sing xs)
 --returns id
 
 --9.15
-
---formatList :: (a -> String) -> [a -> String 
---The book wants me to make a program as typed above and use it to make formatLines. I cannot figure out the point of this function. 
-
+ 
 formatLine :: Line -> String 
 formatLine ln = (foldr (++) [] (map (++" ") (init ln))) ++ last ln  
 
@@ -330,11 +347,13 @@ lookmod code
 	findCode :: (BarCode, Name, Price) -> Bool
 	findCode x = code == frt3 x
 --What do to make the fucntion return nothing if there is no matching code?
+--Maybe type
+--Use filter on formatBill instead
 
 makeBillmod :: TillType -> BillType
 makeBillmod codeList = map lookmod codeList 
 
---9.20
+--9.19
 
 dropUntil :: (a -> Bool) -> [a] -> [a]
 dropUntil p [] = []
@@ -348,7 +367,7 @@ notWhiteSpace chr = not (elem chr whitespace)
 dropWord :: String -> String 
 dropWord str = dropUntil notWhiteSpace str
 
---9.21
+--9.20
 
 isWhiteSpace :: Char -> Bool 
 isWhiteSpace chr = elem chr whitespace
@@ -361,21 +380,20 @@ getUntil p [] = []
 getUntil p (x:xs)
 	| p x = []
 	|otherwise = x: getUntil p xs
-
+	
+{-
 takeWhile :: (a -> Bool) -> [a] -> [a]
 takeWhile p [] = []
 takeWhile p (x:xs)
 	|p x = x: takeWhile p xs
 	|otherwise = []
-
-{-
-takeWhile :: (a -> Bool) -> [a] -> [a]
-takeWhile p [] = []
-takeWhile p (x:xs)
-	|getUntil p [x] ==[] = x :takeWhile p xs
-	|otherwise = []
---Trouble defining takeWhile w/getUntil 
 -}
+
+takeWhile :: (a -> Bool) -> [a] -> [a]
+takeWhile p list = getUntil f list
+	where
+--	f :: a -> Bool Rigid Types?
+	f e = not (p e)
 
 --9.22
 
@@ -387,7 +405,7 @@ getWord xs = getUntil p xs
 splitWords :: String -> [Word]
 splitWords [] = [] 
 splitWords st = (getWord st): splitWords (dropSpace (dropWord st))
-{-
+
 {-Old defintion 
 getLine :: Int -> [Word]-> Line
 getLine len [] = []
@@ -400,13 +418,12 @@ getLine len (w:ws)
 -}
 --Want to redefine getLine with getUntil, but having trouble defining spaceLeftInLine. How do I get the list of wordsUsed?  
 getLine :: [Word]-> Line
-getLine wds@(w:ws) = getUntil (w <=spaceLeftInLine) wds
+getLine wds@(w:ws) = getUntil (<=spaceLeftInLine) wds
 	where
 	spaceLeftInLine = lineLen - spaceUsed
 	spaceUsed = charsUsed + spacesUsed
 	charsUsed = sum (map length wordsUsed) 
 	spacesUsed = length wordsUsed
- 
 
 {-Old defintion    
 dropLine :: Int ->  [Word] -> Line
