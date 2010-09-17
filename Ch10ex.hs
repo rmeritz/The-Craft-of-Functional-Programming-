@@ -1,7 +1,7 @@
 --The Craft of Functional Programming 
 --Ch. 10 Functions as Values
 
-import Prelude hiding (succ, flip, elem, not)
+import Prelude hiding (succ, flip, not, lines)
 import Pictures
 
 --10.1
@@ -289,10 +289,10 @@ flipHPoint :: Int ->  (Int,Int) -> (Int, Int)
 flipHPoint h (x,y) = (x, h-y)
 
 flipVRep :: Rep -> Rep  
-flipVRep (h, w, points) = (h, w, map (flipVPoint h) points)
+flipVRep (h, w, points) = (h, w, map (flipVPoint w) points)
 
 flipVPoint :: Int ->  (Int,Int) -> (Int, Int)
-flipVPoint h (x,y) = (x, h-y)
+flipVPoint w (x,y) = (w-x, y)
 
 superimposeRep :: Rep -> Rep -> Rep 
 superimposeRep (h, w, points) (h', w', points') = (h, w, superPoints (points++points'))
@@ -319,10 +319,16 @@ dropDouble (x:x':xs)
 	|otherwise = x : dropDouble (x':xs)
 --could I filter somehow?
 --filter :: (a -> bool) -> [a] -> [a] 
---filter ((head list)/=) list
+--filter ((head list)/=) list ...
+	
+rotate90Rep :: Rep -> Rep 
+rotate90Rep (h,w, points) = flipVRep (w,h, map rotate90Point points)
+
+rotate90Point :: (Int, Int) -> (Int, Int)
+rotate90Point (x,y) = (y,x) 
 	
 --10.19
-
+          
 --Redo 6.2 exercises 
 
 type Position = (Int, Int)
@@ -331,17 +337,20 @@ type Img = (Rep, Position)
 makeImg :: Rep -> Position -> Img
 makeImg rep pos = (rep, pos)
 
+horseImg :: Img
+horseImg = makeImg (pictureToRep horse) (13,13) 
+
 frt (x,_)=x
 scd (_,y)=y
 
-changePositionRep :: Img -> Position -> Img 
-changePositionRep img pos = (frt img, pos)
+changePositionImg :: Img -> Position -> Img 
+changePositionImg img pos = (frt img, pos)
 
 makePosition :: Int -> Int -> Position 
 makePosition a b = (a, b)
 
-moveImageRep :: Img -> Int -> Int -> Img
-moveImageRep img moveX moveY = changePositionRep img ((frt(scd img)+ moveX), (scd(scd img) + moveY))
+moveImg :: Img -> Int -> Int -> Img
+moveImg img moveX moveY = changePositionImg img ((frt(scd img)+ moveX), (scd(scd img) + moveY))
 
 place :: Img -> Img
 place ((h, w, points), (x,y)) = ((h+y, w+x, map (shiftPointsX x) points), (0,0))
@@ -355,3 +364,198 @@ showPicture (height, width, listofblackpts) = foldr blackPoint (whitePicture hei
 printImg :: Img -> IO()
 printImg = printPicture. showPicture. frt. place 
 
+flipHImgN :: Img -> Img 
+flipHImgN img = ((flipHRep.frt) img, scd img)
+
+flipVImgN :: Img -> Img 
+flipVImgN img = ((flipVRep.frt) img, scd img)
+
+rotateImgN :: Img -> Img
+rotateImgN img = ((rotateRep.frt) img, scd img)
+
+rotate90ImgN :: Img -> Img 
+rotate90ImgN img = ((rotate90Rep.frt) img, (rotate90Point.scd) img)
+
+flipHImg :: Img -> Img 
+flipHImg img@((h,w,point),(x,y)) = moveImg (flipHImgN img) 0 (-h) 
+
+flipVImg :: Img -> Img 
+flipVImg img@((h,w,point),(x,y)) = moveImg (flipVImgN img) (-w) 0 
+
+rotateImg :: Img -> Img
+rotateImg img@((h,w,point),(x,y)) = moveImg (rotateImgN img) (-w) (-h) 
+
+rotate90Img :: Img -> Img
+rotate90Img img@((h,w,point),(x,y)) = moveImg (rotate90ImgN img) (-h) (-w)
+
+superimposeImg :: Img -> Img -> Img  
+superimposeImg img1 img2 = ((superimposeRep ((frt.place) img1) ((frt.place) img2)), (0,0))
+
+--10.20
+
+type Doc  = String
+type Line = String
+type Word = String
+
+docEx :: Doc
+docEx = "catherdral doggerel catherdral\nbattery doggerel catherdral\ncatherdral" 
+
+getUntil :: (a -> Bool) -> [a] -> [a]
+getUntil p [] = []
+getUntil p (x:xs)
+	| p x = []
+	|otherwise = x: getUntil p xs
+	
+dropUntil :: (a -> Bool) -> [a] -> [a]
+dropUntil p [] = []
+dropUntil p (x:xs)
+	|p x = dropUntil p xs
+	|otherwise = (x:xs)
+
+getL :: Doc -> Line 
+getL = getUntil (=='\n')
+
+dropL :: Doc -> Doc 
+dropL = (dropUntil (=='\n')).(dropUntil (/='\n'))
+
+lines :: Doc -> [Line]
+lines "" = []
+lines doc = getL doc : (lines.dropL) doc   
+
+--10.21
+
+exIntWord :: [(Int, Word)]
+exIntWord = [(2,"bat"), (1,"cat"), (3, "cat"), (1, "doggy"), (2, "doggy")]
+
+makeLists :: [(Int, Word)] -> [([Int],Word)]
+--makeLists = map (\(n, st) -> ([n],st)) 
+makeLists l = [([n],st)| (n,st) <- l]  
+
+shorten :: [([Int],Word)] -> [([Int],Word)]
+--shorten = filter (\(nl, wd) -> (length wd > 3))
+shorten l = [(nl, wd)|(nl, wd) <- l, (length wd > 3)]
+
+--10.22
+
+makeIndex :: Doc -> [ ([Int],Word) ]
+makeIndex
+  = lines       >.>     --   Doc            -> [Line]
+    numLines    >.>     --   [Line]         -> [(Int,Line)] 
+    allNumWords >.>     --   [(Int,Line)]   -> [(Int,Word)]
+    sortLs      >.>     --   [(Int,Word)]   -> [(Int,Word)]
+    makeLists   >.>     --   [(Int,Word)]   -> [([Int],Word)]
+    amalgamate  >.>     --   [([Int],Word)] -> [([Int],Word)]
+    shorten             --   [([Int],Word)] -> [([Int],Word)]  
+
+numLines :: [Line] -> [ ( Int , Line ) ]
+numLines linels = zip [1 .. length linels] linels
+
+numWords :: ( Int , Line ) -> [ ( Int , Word ) ]
+numWords (number , line) = [ (number , word) | word <- splitWords line ]
+
+whitespace :: String
+whitespace = " \n\t;:.,\'\"!?()-"
+
+splitWords :: String -> [Word]
+splitWords [] = [] 
+splitWords st = (getWord st): splitWords (dropSpace (dropWord st))
+
+getWord :: String -> Word
+getWord xs = getUntil p xs 
+	where 
+	p x = elem x whitespace
+	
+notWhiteSpace :: Char -> Bool 
+notWhiteSpace chr = not (elem chr whitespace) 
+
+dropWord :: String -> String 
+dropWord str = dropUntil notWhiteSpace str
+
+isWhiteSpace :: Char -> Bool 
+isWhiteSpace chr = elem chr whitespace
+ 
+dropSpace :: String -> String
+dropSpace str = dropUntil isWhiteSpace str 	
+
+allNumWords :: [ ( Int , Line ) ] -> [ ( Int , Word ) ]
+allNumWords = concat . map numWords
+
+orderPair :: ( Int , Word ) -> ( Int , Word ) -> Bool
+orderPair ( n1 , w1 ) ( n2 , w2 )
+  = w1 < w2 || ( w1 == w2 && n1 < n2 )
+
+sortLs :: [ ( Int , Word ) ] -> [ ( Int , Word ) ]
+sortLs []     = []
+sortLs (p:ps)
+  = sortLs smaller ++ [p] ++ sortLs larger
+    where
+    smaller = [ q | q<-ps , orderPair q p ]
+    larger  = [ q | q<-ps , orderPair p q ]
+    
+amalgamate :: [ ([Int],Word) ] -> [ ([Int],Word) ]
+amalgamate [] = []
+amalgamate [p] = [p]
+amalgamate ((l1,w1):(l2,w2):rest)
+  | w1 /= w2    = (l1,w1) : amalgamate ((l2,w2):rest)
+  | otherwise   = amalgamate ((l1++l2,w1):rest)    
+ 
+type Pages = String  
+  
+makeIndexRange :: Doc -> [(Pages, Word)]  
+makeIndexRange = makeIndex >.> (map ranger)
+
+ranger :: ([Int],Word) -> (Pages, Word) 
+ranger l = ((((intercalate ",").makeRange.frt) l), scd l)   
+
+intercalate :: String ->  [String] -> String
+intercalate _ [] = ""
+intercalate _ [x] = x
+intercalate joiner (x:xs) = x ++ joiner ++ (intercalate joiner xs)  
+
+makeRange :: [Int] -> [Pages] 
+makeRange [] = []
+makeRange [n] = [show n] 
+makeRange (n:n':ns) 
+	|n' == n+1 = (show n ++"-"++ show n') : makeRange ns 
+	|otherwise = show n : makeRange (n':ns) 
+	
+{-I need to fix makeRange so it can handle ranges longer an 2 
+--[1,2,3,5,9,10]
+--["1-3","5","9-10"]
+makeRange [] = []
+makeRange [n] = [show n] 	
+makeRange (n:ns) 
+	|n == startOfRange = (show n ++ "-" ++ show endOfRange) : makeRange (dropUntil endOfRange ns))
+	|otherwise = show n : makeRange ns 
+	where 
+	startOfRange = 
+	endOfRange = -}
+	
+--10.23
+
+unSortedEx :: [ ( Int , Word ) ] 
+unSortedEx = [(4, "cat"), (2,"bat"), (1,"doggy"), (3, "cat"), (1, "doggy"), (2, "doggy")]
+
+orderPairMod :: ( Int , Word ) -> ( Int , Word ) -> Bool
+orderPairMod ( n1 , w1 ) ( n2 , w2 )
+  = w1 < w2 || ( w1 == w2 && n1 < n2 ) || ( w1 == w2 && n1 == n2 ) 
+
+sortLsMod :: [ ( Int , Word ) ] -> [ ( Int , Word ) ]
+sortLsMod []     = []
+sortLsMod (p:ps)
+  = sortLsMod smaller ++ [p] ++ sortLsMod larger
+    where
+    smaller = [ q | q<-ps , orderPairMod q p ]
+    larger  = [ q | q<-ps , orderPair p q ]
+
+--10.24
+
+{-Write using getUntil and dropUntil 
+amalgamateR :: [ ([Int],Word) ] -> [ ([Int],Word) ]
+amalgamate [] = []
+amalgamate [p] = [p]
+amalgamate ((l1,w1):(l2,w2):rest)
+  | w1 /= w2    = (l1,w1) : amalgamate ((l2,w2):rest)
+  | otherwise   = amalgamate ((l1++l2,w1):rest)-}    
+  
+  
