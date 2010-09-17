@@ -1,9 +1,11 @@
 --Use Pictures
 
---Exercises 2.1 thru 2.1
 --2.1
 
+module UsePictures where
+
 import Pictures
+
 
 blackHorse :: Picture 
 blackHorse = invertColour (horse)

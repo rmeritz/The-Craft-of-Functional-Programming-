@@ -99,14 +99,27 @@ minReturn :: (Int -> Int) -> Int -> Int
 minReturn f n = minList (map f [0..n])
 
 minReturnA :: (Int -> Int) -> Int -> Int 
-minReturnA f n = foldr1 minListA (map f [0..n])
+minReturnA f n = foldr1 minListA (map f [1..n])
 	where 
 	minListA :: Int -> Int -> Int
 	minListA x y
 		|x < y = x
 		|otherwise = y 
 
---write out calculation later		
+{-write out calculation
+minReturnA (mod 5) 4
+foldr1 minListA (map (mod 5) [1, 2, 3, 4])
+foldr1 minListA [1, 2, 3, 4, 5] 
+foldr minListA [1] [2, 3, 4, 5]
+minListA 2 (foldr minListA [1] [3, 4, 5])
+minListA 2 (minListA 3 (foldr minListA [1] [4, 5]))
+minListA 2 (minListA 3 (minListA 4 (foldr minListA [1] [5])))
+minListA 2 (minListA 3 (minListA 4 (minListA 5(foldr minListA [1] [])))
+minListA 2 (minListA 3 (minListA 4 (minListA 5 1)))
+minListA 2 (minListA 3 (minListA 4 1))
+minListA 2 (minListA 3 1) 
+minListA 2 1
+1-}
 
 allEqual :: (Int -> Int) -> Int -> Bool
 allEqual f n = and (map (==(f 0)) (map f [0..n]))
@@ -114,7 +127,6 @@ allEqual f n = and (map (==(f 0)) (map f [0..n]))
 posReturn :: (Int -> Int) -> Int -> Bool 
 --posReturn f n = and (map (>0) (map f [0..n]))	
 posReturn f n = and (map ((>0).f) [0..n]) 	 
---Is there a better way to do this than with the length function?
 
 isSorted :: [Int] -> Bool 
 isSorted xs = (xs == iSort xs)
@@ -187,8 +199,22 @@ snoc x xs = xs ++ [x]
 	
 last list = foldr1 (\x y -> y) list
 	
---calcuation writting party
-
+{---Write out Calculation 
+last "happy"
+foldr1 (\x y -> y) "happy"
+foldr (\x y -> y) "h" "appy"   --If I type this line in ghci I get 'h'
+(\x y -> y) 'a' (foldr (\x y -> y) "h" "ppy")
+(\x y -> y) 'a' ((\x y -> y) 'p' (foldr (\x y -> y) "h" "py"))
+(\x y -> y) 'a' ((\x y -> y) 'p' ((\x y -> y) 'p' (foldr (\x y -> y) "h" "y")))
+(\x y -> y) 'a' ((\x y -> y) 'p' ((\x y -> y) 'p' ((\x y -> y) 'y' (foldr (\x y -> y) "h" "")))
+(\x y -> y) 'a' ((\x y -> y) 'p' ((\x y -> y) 'p' ((\x y -> y) 'y' 'h'))
+(\x y -> y) 'a' ((\x y -> y) 'p' ((\x y -> y) 'p' ( 'h'))
+(\x y -> y) 'a' ((\x y -> y) 'p' ((\x y -> y) 'p' 'h')
+(\x y -> y) 'a' ((\x y -> y) 'p' 'h')
+(\x y -> y) 'a' 'h')
+'h'
+--What? last works?
+-}
 init :: [a] -> [a]
 --init [x] = []
 --init (x:xs) = x: init xs
@@ -339,19 +365,11 @@ exnew2= (4712, "Bigger Balls" , 2281)
 newCode :: (BarCode, Name, Price) -> DatabaseSL
 newCode index = index : (removeCode (frt3 index) codeIndex)
 
-lookmod:: BarCode -> (Name, Price)
-lookmod code
---	|(filter findCode codeIndex)== [] = ( , )
-	|otherwise = head(map scd3 (filter findCode codeIndex)) 
-	where
-	findCode :: (BarCode, Name, Price) -> Bool
-	findCode x = code == frt3 x
---What do to make the fucntion return nothing if there is no matching code?
---Maybe type
---Use filter on formatBill instead
+formatLinesBillmod :: [(Name, Price)] -> String
+formatLinesBillmod list = foldr (++) [] (map formatLineBill (filter (("Unknown Item", 0)/=) list))
 
-makeBillmod :: TillType -> BillType
-makeBillmod codeList = map lookmod codeList 
+formatBillmod :: BillType -> String
+formatBillmod list = "\tHaskell Store\n\n"++(formatLinesBillmod list)++(formatTotal(makeTotal list))
 
 --9.19
 
@@ -406,7 +424,7 @@ splitWords :: String -> [Word]
 splitWords [] = [] 
 splitWords st = (getWord st): splitWords (dropSpace (dropWord st))
 
-{-Old defintion 
+{-{-Old defintion 
 getLine :: Int -> [Word]-> Line
 getLine len [] = []
 getLine len (w:ws)
@@ -456,9 +474,8 @@ someWords =["I", "am", "not", "a", "very", "good", "typer", "but", "I", "need", 
   
 splitLines :: [Word] -> [Line] 
 splitLines [] = []
-splitLines ws = getLine ws : splitLines (dropLine ws) 	
+splitLines ws = getLine ws : splitLines (dropLine ws) 	-}
 
--}
 
 --9.22
 
