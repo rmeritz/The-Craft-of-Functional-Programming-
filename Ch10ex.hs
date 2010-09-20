@@ -219,7 +219,7 @@ makePicture height width listofblackpts = foldr blackPoint (whitePicture height 
 whitePicture :: Int -> Int -> Picture
 whitePicture h w = replicate (h+1) (foldr (++) [] (replicate (w+1) ".")) 
 
-blackPoint :: (Int, Int) -> Picture -> Picture
+{-blackPoint :: (Int, Int) -> Picture -> Picture
 blackPoint (x,y) pic = (headRows 0 y pic)  ++ newRow ++ (restOfRows 0 y pic)
 	where
 	newRow = [(changePointInRow 0 x (selectRow 0 y pic))]
@@ -242,7 +242,16 @@ changePointInRow n x (p:ps)
 selectRow :: Int -> Int -> Picture -> String
 selectRow n y (r:rs)
 	|n==y =r 
-	|otherwise = selectRow (n+1) y rs 
+	|otherwise = selectRow (n+1) y rs -}
+
+blackPoint :: (Int,Int) -> Picture -> Picture
+blackPoint (x,0) (p:ps) = (replacePoint x p):ps
+  where
+  replacePoint :: Int -> String -> String
+  replacePoint 0 (e:es) = "#" ++ es
+  replacePoint x (e:es) = e:replacePoint (x-1) es
+blackPoint (x,y) (p:ps) = p:blackPoint (x,y-1) ps
+	
 
 --10.17
 
@@ -295,31 +304,12 @@ flipVPoint :: Int ->  (Int,Int) -> (Int, Int)
 flipVPoint w (x,y) = (w-x, y)
 
 superimposeRep :: Rep -> Rep -> Rep 
-superimposeRep (h, w, points) (h', w', points') = (h, w, superPoints (points++points'))
-
-insPair :: (Int, Int) -> [(Int, Int)] -> [(Int, Int)]
-insPair (x,y) [] = [(x,y)]
-insPair (x,y) ((z,w):ps)
- |x < z = (x,y):(z,w):ps
- |(x == z) && (y < w ) = (x,y):(z,w):ps
- |otherwise = (z,w): insPair (x,y) ps
-
-pairISort :: [(Int, Int)] -> [(Int, Int)]
-pairISort []     = [] 
-pairISort (p:ps) = insPair p (pairISort ps)
-
-superPoints :: [(Int, Int)] -> [(Int, Int)]
-superPoints = dropDouble. pairISort
-
-dropDouble :: [(Int, Int)] -> [(Int, Int)]
-dropDouble [] = []
-dropDouble [x] = [x]
-dropDouble (x:x':xs)
-	|x==x' = dropDouble xs
-	|otherwise = x : dropDouble (x':xs)
---could I filter somehow?
---filter :: (a -> bool) -> [a] -> [a] 
---filter ((head list)/=) list ...
+superimposeRep (h, w, points) (h', w', points') = (h, w, dropDouble (points++points'))
+  where
+  dropDouble [] = []
+  dropDouble (x:xs)
+   | x `notElem` xs = x : dropDouble xs
+   | otherwise = dropDouble xs
 	
 rotate90Rep :: Rep -> Rep 
 rotate90Rep (h,w, points) = flipVRep (w,h, map rotate90Point points)
@@ -334,23 +324,24 @@ rotate90Point (x,y) = (y,x)
 type Position = (Int, Int)
 type Img = (Rep, Position)
 
+imgPosition = snd
+xCoord = fst
+yCoord = snd
+
 makeImg :: Rep -> Position -> Img
 makeImg rep pos = (rep, pos)
 
 horseImg :: Img
 horseImg = makeImg (pictureToRep horse) (13,13) 
 
-frt (x,_)=x
-scd (_,y)=y
-
 changePositionImg :: Img -> Position -> Img 
-changePositionImg img pos = (frt img, pos)
+changePositionImg img pos = (fst img, pos)
 
 makePosition :: Int -> Int -> Position 
 makePosition a b = (a, b)
 
 moveImg :: Img -> Int -> Int -> Img
-moveImg img moveX moveY = changePositionImg img ((frt(scd img)+ moveX), (scd(scd img) + moveY))
+moveImg img moveX moveY = changePositionImg img ((xCoord(imgPosition img)+ moveX), (yCoord(imgPosition img) + moveY))
 
 place :: Img -> Img
 place ((h, w, points), (x,y)) = ((h+y, w+x, map (shiftPointsX x) points), (0,0))
@@ -362,19 +353,19 @@ showPicture :: Rep -> Picture
 showPicture (height, width, listofblackpts) = foldr blackPoint (whitePicture height width) listofblackpts 
 
 printImg :: Img -> IO()
-printImg = printPicture. showPicture. frt. place 
+printImg = printPicture. showPicture. fst. place 
 
 flipHImgN :: Img -> Img 
-flipHImgN img = ((flipHRep.frt) img, scd img)
+flipHImgN img = ((flipHRep.fst) img, snd img)
 
 flipVImgN :: Img -> Img 
-flipVImgN img = ((flipVRep.frt) img, scd img)
+flipVImgN img = ((flipVRep.fst) img, snd img)
 
 rotateImgN :: Img -> Img
-rotateImgN img = ((rotateRep.frt) img, scd img)
+rotateImgN img = ((rotateRep.fst) img, snd img)
 
 rotate90ImgN :: Img -> Img 
-rotate90ImgN img = ((rotate90Rep.frt) img, (rotate90Point.scd) img)
+rotate90ImgN img = ((rotate90Rep.fst) img, (rotate90Point.snd) img)
 
 flipHImg :: Img -> Img 
 flipHImg img@((h,w,point),(x,y)) = moveImg (flipHImgN img) 0 (-h) 
@@ -389,7 +380,7 @@ rotate90Img :: Img -> Img
 rotate90Img img@((h,w,point),(x,y)) = moveImg (rotate90ImgN img) (-h) (-w)
 
 superimposeImg :: Img -> Img -> Img  
-superimposeImg img1 img2 = ((superimposeRep ((frt.place) img1) ((frt.place) img2)), (0,0))
+superimposeImg img1 img2 = ((superimposeRep ((fst.place) img1) ((fst.place) img2)), (0,0))
 
 --10.20
 
@@ -398,7 +389,7 @@ type Line = String
 type Word = String
 
 docEx :: Doc
-docEx = "catherdral doggerel catherdral\nbattery doggerel catherdral\ncatherdral" 
+docEx = "catherdral doggerel catherdral\nbattery doggerel is catherdral\ncatherdral" 
 
 getUntil :: (a -> Bool) -> [a] -> [a]
 getUntil p [] = []
@@ -492,12 +483,12 @@ sortLs (p:ps)
     smaller = [ q | q<-ps , orderPair q p ]
     larger  = [ q | q<-ps , orderPair p q ]
     
-amalgamate :: [ ([Int],Word) ] -> [ ([Int],Word) ]
+{-amalgamate :: [ ([Int],Word) ] -> [ ([Int],Word) ]
 amalgamate [] = []
 amalgamate [p] = [p]
 amalgamate ((l1,w1):(l2,w2):rest)
   | w1 /= w2    = (l1,w1) : amalgamate ((l2,w2):rest)
-  | otherwise   = amalgamate ((l1++l2,w1):rest)    
+  | otherwise   = amalgamate ((l1++l2,w1):rest)-}    
  
 type Pages = String  
   
@@ -505,19 +496,19 @@ makeIndexRange :: Doc -> [(Pages, Word)]
 makeIndexRange = makeIndex >.> (map ranger)
 
 ranger :: ([Int],Word) -> (Pages, Word) 
-ranger l = ((((intercalate ",").makeRange.frt) l), scd l)   
+ranger l = ((((intercalate ",").makeRange.fst) l), snd l)   
 
 intercalate :: String ->  [String] -> String
 intercalate _ [] = ""
 intercalate _ [x] = x
 intercalate joiner (x:xs) = x ++ joiner ++ (intercalate joiner xs)  
 
-makeRange :: [Int] -> [Pages] 
+{-makeRange :: [Int] -> [Pages] 
 makeRange [] = []
 makeRange [n] = [show n] 
 makeRange (n:n':ns) 
 	|n' == n+1 = (show n ++"-"++ show n') : makeRange ns 
-	|otherwise = show n : makeRange (n':ns) 
+	|otherwise = show n : makeRange (n':ns)-} 
 	
 {-I need to fix makeRange so it can handle ranges longer an 2 
 --[1,2,3,5,9,10]
@@ -530,7 +521,23 @@ makeRange (n:ns)
 	where 
 	startOfRange = 
 	endOfRange = -}
-	
+
+makeRange :: [Int] -> [Pages]
+makeRange [] = []
+makeRange (x:xs) = range : makeRange xs'
+  where
+  (range,xs') = makeRange' x x xs
+  
+  makeRange' :: Int -> Int -> [Int] -> (String,[Int])
+  makeRange' s prior [] = (smartRange s prior, [])
+  makeRange' s prior yss@(y:ys)
+    | prior == y-1 = makeRange' s y ys
+    | otherwise = (smartRange s prior, yss)
+
+  smartRange a b
+    | a == b = show a
+    | otherwise = (show a) ++ "-" ++ (show b)
+
 --10.23
 
 unSortedEx :: [ ( Int , Word ) ] 
@@ -550,12 +557,254 @@ sortLsMod (p:ps)
 
 --10.24
 
-{-Write using getUntil and dropUntil 
-amalgamateR :: [ ([Int],Word) ] -> [ ([Int],Word) ]
-amalgamate [] = []
-amalgamate [p] = [p]
-amalgamate ((l1,w1):(l2,w2):rest)
-  | w1 /= w2    = (l1,w1) : amalgamate ((l2,w2):rest)
-  | otherwise   = amalgamate ((l1++l2,w1):rest)-}    
-  
-  
+amalgamateR :: [([Int],Word) ] -> [[([Int],Word)]]
+amalgamateR [] = []
+amalgamateR p@((l,w):rest) = ((getUntil ((/=w).snd)) p) : amalgamateR (dropUntil ((==w).snd) p) 
+
+--([1],"cat"), ([2],"cat") = ([1,2], cat) 
+amal :: [([Int],Word) ] -> ([Int],Word)
+amal p= (foldr (++) [] (map fst p), snd (head p))
+
+amalgamate :: [([Int],Word) ] -> [([Int],Word)]
+amalgamate p = map amal (amalgamateR p) 
+
+--10.25
+
+--See defination of shorten 
+
+--10.26
+
+--If the word is in the index more than twice the the entries will not all be amalgamted together
+
+--10.27
+
+printIndex :: [([Int], Word)] -> IO ()
+printIndex = putStrLn . showIndex 
+
+showIndex :: [([Int], Word)] -> String
+showIndex p = intercalate "\n" (map showLine p) 
+	where
+	showLine (l,w)= (w++" "++(intercalate "," (map show l)))
+	
+--10.28
+
+allNumWordsSmall :: [ ( Int , Line ) ] -> [ ( Int , Word ) ]
+allNumWordsSmall = (filter (\(nl, wd) -> (length wd > 3))). concat. map numWords
+
+--10.29
+
+makeIndexLen :: Doc -> [ (Int,Word) ]
+makeIndexLen
+  = lines       >.>     --   Doc            -> [Line]
+    numLines    >.>     --   [Line]         -> [(Int,Line)] 
+    allNumWords >.>     --   [(Int,Line)]   -> [(Int,Word)]
+    sortLs      >.>     --   [(Int,Word)]   -> [(Int,Word)]
+    makeLists   >.>     --   [(Int,Word)]   -> [([Int],Word)]
+    amalgamate  >.>     --   [([Int],Word)] -> [([Int],Word)]
+    shorten     >.>     --   [([Int],Word)] -> [([Int],Word)]  
+    numberOfEntrys      --   [([Int],Word)] -> [(Int,Word)]
+
+numberOfEntrys :: [([Int],Word)] -> [(Int,Word)]
+numberOfEntrys p = map toLen p 
+	where
+	toLen (l,w) = (length l, w)
+
+--10.30
+
+ord :: Char -> Int
+ord  =  fromEnum
+
+chr  :: Int  -> Char
+chr  =  toEnum
+
+offset :: Int
+offset = ord 'a' - ord 'A'
+
+toLower :: Char -> Char
+toLower ch
+	|(ord ch) >97 	=ch
+	|otherwise	    =chr(ord ch + offset)
+
+lowerWord w = (toLower (head w)) : tail w 
+
+splitWordsLow :: String -> [Word]
+splitWordsLow [] = [] 
+splitWordsLow st = (lowerWord (getWord st)): splitWordsLow (dropSpace (dropWord st))
+
+--have numWords use splitWordsLow instead of splitWords
+
+--What do I do with proper nouns? I could make everything Uppercase?
+
+--10.31 
+    
+sortLsProp :: (a -> a -> Bool) -> [a] -> [a]
+sortLsProp _ [] = []
+sortLsProp property (p:ps)     
+	 = sortLsProp property smaller ++ [p] ++ sortLsProp property larger
+    where
+    smaller = [ q | q<-ps , property q p ]
+    larger  = [ q | q<-ps , property p q ]
+		
+--10.32
+
+--makeIndexHaskell :: Doc -> String
+--What would I want to ignore? 
+--whitespaceH :: String
+--whitespaceH = " \n\t;:.,\'\"!?()->|&+-"
+--What else would I want to modify? 
+--Its unclear why I would want an index of a progam couldn't I just Ctrl + F 
+
+--10.33
+
+{-id x             =  x                 --(id.1)
+f . g            =  \ x -> f (g x)      --(..1)
+flip f x y       =  f y x               --(flip.1)
+
+Prove by principle of extensionality
+f . (g . h) = f . (g . h) 
+                     
+f . (g (h x))                           by(..1) 
+f (g (h x))                             by(..1) 
+
+f . (g (h x))                           by(..1) 
+f (g (h x))                             by(..1)-}
+
+--10.34
+
+{-Prove by principle of extensionality
+id . f = f 
+
+id (f x)                                by(..1)
+f x                                     by(id.1)
+
+f x-}
+
+--10.35
+
+{-Prove by principle of extensionality
+flip . flip = id
+
+(flip . flip) f x y 
+flip (flip f x y)                           by(..1)
+flip (f y x)                                by(flip.1)
+f x y                                       by(flip.1)
+
+(id) f x y                   
+f x y                                       by(id.1)-}
+
+--10.36
+
+{-curry f x y      =  f (x, y)               --(curry.1)
+
+uncurry f p      =  f (fst p) (snd p)      --(uncurry.1)
+
+Prove that curry and uncurrt are inverses 
+
+curry . uncurry = id                       by extensionality (below)    
+
+(curry. uncurry) f (x, y)                  
+curry (uncurry f (x,y))                    by(..1)
+curry (f x y)                              by(uncurry.1) 
+f (x,y)                                    by(curry.1)
+
+(id) f (x,y)     
+f (x,y)                                    by(id.1)
+
+uncurry . curry = id                       by extensionality (below)    
+
+(uncurry. curry) f (x, y)                  
+uncurry (curry f (x,y))                    by(..1)
+uncurry (f x y)                            by(curry.1) 
+f (x,y)                                    by(uncurry.1)
+
+(id) f (x,y)     
+f (x,y)                                    by(id.1)-}
+
+--10.37
+
+{-iter n f x 
+	|n ==0 = x                            --(iter.1)
+    |n ==1 = f x                          --(iter.2)
+	|n > 1 = iter (n-1) f (f x)           --(iter.3)
+
+Prove for all real numbers 
+iter n id = id 
+
+if n=0
+iter 0 id x                              
+x                                       by(iter.1)
+
+if n=1
+iter 1 id x
+id x                                    by(iter.2)
+x                                       by(id.1)
+
+if n>1
+iter n f x  
+iter (n-1) id (id x)                   by(iter.2)
+n is decreasing and so will eventually reach the base cases. 
+--What are the exceptable assumptions/syntax for showing something for all real numbers? -}
+
+--10.38
+
+{-f . f = f                             --(idempotent)
+
+--abs is given in the prelude but its not clear how to me?
+
+assume x is positve number
+--What are the exceptable assumptions/syntax for this?
+(abs . abs) x 
+abs (abs x)
+abs x
+x
+
+(abs . abs) (negate x) 
+abs (abs  (negate x))
+abs x
+x
+
+abs x
+x
+signum x = x
+abs (negate x)
+x
+
+abs.abs = abs
+
+signum returns -1 for negative numbers, 0 for zero, and 1 for positive numbers
+
+if x is negative 
+signum.signum
+signum (signum x) 
+signum (-1)
+-1
+
+if x is zero 
+signum.signum
+signum (signum x) 
+signum (0)
+0
+
+if x is positive
+signum.signum
+signum (signum x) 
+signum (1)
+1
+
+if x is negative 
+sigum x
+-1
+
+if x is zero 
+signum x
+0
+
+if x is positive
+signum x
+1
+
+signum . signum = signum -}
+
+--10.39
+
+--More Proofs!

@@ -202,18 +202,8 @@ last list = foldr1 (\x y -> y) list
 {---Write out Calculation 
 last "happy"
 foldr1 (\x y -> y) "happy"
-foldr (\x y -> y) "h" "appy"   --If I type this line in ghci I get 'h'
-(\x y -> y) 'a' (foldr (\x y -> y) "h" "ppy")
-(\x y -> y) 'a' ((\x y -> y) 'p' (foldr (\x y -> y) "h" "py"))
-(\x y -> y) 'a' ((\x y -> y) 'p' ((\x y -> y) 'p' (foldr (\x y -> y) "h" "y")))
-(\x y -> y) 'a' ((\x y -> y) 'p' ((\x y -> y) 'p' ((\x y -> y) 'y' (foldr (\x y -> y) "h" "")))
-(\x y -> y) 'a' ((\x y -> y) 'p' ((\x y -> y) 'p' ((\x y -> y) 'y' 'h'))
-(\x y -> y) 'a' ((\x y -> y) 'p' ((\x y -> y) 'p' ( 'h'))
-(\x y -> y) 'a' ((\x y -> y) 'p' ((\x y -> y) 'p' 'h')
-(\x y -> y) 'a' ((\x y -> y) 'p' 'h')
-(\x y -> y) 'a' 'h')
-'h'
---What? last works?
+
+the definition of foldr1 in the book is wrong!
 -}
 init :: [a] -> [a]
 --init [x] = []
