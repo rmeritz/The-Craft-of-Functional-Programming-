@@ -807,4 +807,161 @@ signum . signum = signum -}
 
 --10.39
 
---More Proofs!
+{-(map.1)	map f []     = []
+(map.2)	map f (x:xs) = f x : map f xs
+
+(++.1) []     ++ ys = ys
+(++.2) (x:xs) ++ ys = x : (xs ++ ys)
+
+Prove
+(hyp) map f (ys++zs) = map f ys ++ map f zs
+
+base case
+map f ([]++zs)
+(++.1) map f zs
+
+map f [] ++ map f zs
+(map.1) [] ++ map f zs
+(++.1) map f zs
+
+induction 
+map f ((y:ys)++zs)
+(++.2) map f y:(ys++zs)
+(map.2) f y : map (ys ++ zs)
+
+map f (y:ys) ++ map f zs
+(map.2) f y : map f ys ++ map f zs 
+(hyp) f y : map f (ys++zs)-}
+
+--10.40
+
+{-(foldr.1) foldr f z []     =  z
+(foldr.2) foldr f z (x:xs) =  f x (foldr f z xs)
+
+Prove
+foldr f st (xs++ys) = f (foldr f st xs) (foldr f st ys)
+
+Base Case
+foldr f st ([]++ys)
+(++.1) foldr f st ys
+
+f (foldr f st []) (foldr f st ys)
+(foldr.1) f st (foldr f st ys)
+
+--How do I say the base cases are equal? 
+
+Induction 
+
+foldr f st ((x:xs)++ys)
+(++.2) foldr f st x:(xs++ys)
+(foldr.2) f x (foldr f st (xs++ys)) 
+(hyp) f x (f (foldr f st xs) (foldr f st ys))
+
+f (foldr f st (x:xs))(foldr f st ys)
+(foldr.2) f (f x (foldr f st xs))(foldr f st ys)
+
+--They aren't equal? -}
+
+--10.41
+
+{-(concat.1) concat = foldr (++) []
+
+concat (xs++ys) = concat xs ++ concat ys
+is a speciel case of 
+
+(foldr.3) foldr f st (xs++ys) = f (foldr f st xs) (foldr f st ys)
+
+where
+f == (++)
+st == []-}
+
+--10.42
+
+{-(map.1)	map f []     = []
+(map.2)	map f (x:xs) = f x : map f xs
+
+(++.1) []     ++ ys = ys
+(++.2) (x:xs) ++ ys = x : (xs ++ ys)
+
+(foldr.1) foldr f z []     =  z
+(foldr.2) foldr f z (x:xs) =  f x (foldr f z xs)
+
+Prove
+concat (map (map f) xs) = map f (concat xs)
+
+Base Case
+concat (map (map f) [])
+(map.1) concat []
+(concat.1) foldr (++) [] []
+(foldr.1) []
+
+map f (concat [])
+(concat.1) map f (foldr (++) [] [])
+(foldr.1) map f []
+(map.1) []
+
+Induction 
+
+concat (map (map f) (x:xs))
+concat ((map f) x : (map (map f) xs))
+concat (f x : map f [] : (map (map f) xs))
+concat (f x : [] : (map (map f) xs))
+
+map f (concat (x:xs))
+(concat.1) map f (foldr (++) [] (x:xs))
+(foldr.2) map f ((++) x (foldr (++) [] xs)
+
+--I don't see how to make it close enough to put in the hyp. -}
+
+--10.43
+
+{-Prove
+(0<) . (+1) = (0<=)
+
+if x=<0
+(0<) . (+1) x
+(0<) ((+1) x)
+(0<) (x+1)
+True 
+
+(0<=) x
+True
+
+if x>=1
+(0<) . (+1) x
+(0<) ((+1) x)
+(0<) (x+1)
+False
+
+(0<=) x
+False-}
+
+--10.44
+
+{-(&&.1) p && q = \x -> (p x &&& q x)
+
+(filter.1) filter p []                 = []
+(filter.2) filter p (x:xs) | p x       = x : filter p xs
+                | otherwise = filter p xs
+Prove 
+filter p (filter q xs) = filter (p && q) xs
+
+Base Case
+filter p (filter q [])
+(filter.1) filter p []
+(filter.1) []
+
+filter (p && q) []
+(filter.1) []
+
+Induction 
+filter p (filter q (x:xs))
+
+filter (p && q) (x:xs)
+--How do I show this? -}
+
+
+
+
+
+
