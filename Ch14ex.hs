@@ -1,0 +1,2 @@
+--The Craft of Functional Programing 
+--Ch. 14 Checking Types 
