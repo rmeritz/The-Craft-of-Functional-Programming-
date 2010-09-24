@@ -342,3 +342,152 @@ addLoan existingLoans name typeOfLoan title
 	|(typeOfLoan == "Book") = (makeDueDate(BookLoan name title today)):existingLoans 
 	|(typeOfLoan == "CD") = (makeDueDate(CDLoan name title today)):existingLoans 
 	|(typeOfLoan == "Video") = (makeDueDate(VidLoan name title today)):existingLoans 
+
+--14.15
+
+{-data Expr = Lit Int | Add Expr Expr | Sub Expr Expr
+
+eval :: Expr -> Int
+
+eval (Lit n)     = n
+eval (Add e1 e2) = (eval e1) + (eval e2)
+eval (Sub e1 e2) = (eval e1) - (eval e2)
+
+instance Show Expr where
+	show (Lit n) = show n
+	show (Add e1 e2) = "(" ++ show e1 ++ "+" ++ show e2 ++ ")"
+	show (Sub e1 e2) = "(" ++ show e1 ++ "-" ++ show e2 ++ ")"-}
+
+{-Show Calculations 
+eval (Lit 67)
+67
+
+eval (Add (Sub (Lit 3) (Lit 1))(Lit 3))
+eval (Add (eval (Lit 3) - eval (Lit 1))(Lit 3))
+eval (Add (3 - 1))(Lit 3))
+eval (Add (2)(3))
+eval (2)+ eval(3)
+2+3
+5
+
+show (Add (Lit 67) (Lit (-34)))
+"(" ++ show (Lit 67) ++ "+" ++ show (Lit(-34)) ++ ")" 
+"(" ++ 67 ++ "+" ++ -34 ++ ")" 
+"(67+-34)"-}
+
+--14.16
+
+{-size :: Expr -> Int 
+size (Lit _ ) = 0
+size (Add e1 e2) = 1 + size e1 + size e2
+size (Sub e1 e2) = 1 + size e1 + size e2-}
+
+--14.17
+
+{-
+data Expr = Lit Int | Add Expr Expr | Sub Expr Expr | Mult Expr Expr | Div Expr Expr
+
+eval :: Expr -> Int
+eval (Lit n)     = n
+eval (Add e1 e2) = (eval e1) + (eval e2)
+eval (Sub e1 e2) = (eval e1) - (eval e2)
+eval (Mult e1 e2) = (eval e1) * (eval e2)
+eval (Div e1 e2) = (eval e1) `div` (eval e2) 
+--Will return error if (eval e2 ==0), need maybe case, will see next section 
+
+instance Show Expr where
+	show (Lit n) = show n
+	show (Add e1 e2) = "(" ++ show e1 ++ "+" ++ show e2 ++ ")"
+	show (Sub e1 e2) = "(" ++ show e1 ++ "-" ++ show e2 ++ ")"
+	show (Mult e1 e2) = "(" ++ show e1 ++ "*" ++ show e2 ++ ")"
+	show (Div e1 e2) = "(" ++ show e1 ++ "/" ++ show e2 ++ ")"
+	
+size :: Expr -> Int 
+size (Lit _ ) = 0
+size (Add e1 e2) = 1 + size e1 + size e2
+size (Sub e1 e2) = 1 + size e1 + size e2
+size (Mult e1 e2) = 1 + size e1 + size e2
+size (Div e1 e2) = 1 + size e1 + size e2
+-}
+
+--14.18
+
+data Ops = Add | Sub | Mul | Div | Mod
+
+instance Show Ops where
+	show Add = " + "
+	show Sub = " - "
+	show Mul = " * "
+	show Div = " div "
+	show Mod = " mod "
+
+data ModExpr = Lit Int | Op Ops ModExpr ModExpr
+
+instance Show ModExpr where
+	show (Lit n) = show n
+	show (Op op e1 e2) = "(" ++ show e1 ++ (show op) ++ show e2 ++ ")"
+
+evalM :: ModExpr -> Int
+evalM (Lit n)     = n
+evalM (Op Add e1 e2) = (evalM e1) + (evalM e2)
+evalM (Op Sub e1 e2) = (evalM e1) - (evalM e2)
+evalM (Op Mul e1 e2) = (evalM e1) * (evalM e2)
+evalM (Op Div e1 e2) = (evalM e1) `div` (evalM e2) 
+evalM (Op Mod e1 e2) = (evalM e1) `mod` (evalM e2) 
+
+sizeM :: ModExpr -> Int 
+sizeM (Lit _ ) = 0
+sizeM (Op _ e1 e2) = 1 + sizeM e1 + sizeM e2
+
+--14.19 
+
+data NTree = NilT | NodeT Int NTree NTree
+
+sumTree :: NTree -> Int
+sumTree NilT           = 0
+sumTree (NodeT n t1 t2) = n + sumTree t1 + sumTree t2
+
+depth :: NTree -> Int
+depth NilT             = 0
+depth (NodeT n t1 t2)   = 1 + max (depth t1) (depth t2)
+
+occurs :: NTree -> Int -> Int
+occurs NilT p = 0
+occurs (NodeT n t1 t2) p
+  | n==p        = 1 + occurs t1 p + occurs t2 p
+  | otherwise   =     occurs t1 p + occurs t2 p
+
+{-Show Calcultions
+sumTree (NodeT 3 (NodeT 4 NilT NilT) NilT)
+3 + sumTree(NodeT 4 NilT NilT) + sumTree NilT
+3 + 4 + 0
+7
+
+depth (Node 3 (NodeT 4 NilT NilT) NilT)
+1 + max (depth (NodeT 4 NilT NilT))(depth NilT)
+1 + max (1 + max (depth NilT) (depth NilT)) 
+1 + max (1 + max 0 0) 0
+1 + max (1 + 0) 0
+1 + max 1 0 
+1 + 1
+2 -}
+
+--14.20
+
+data Expr' = Lit' Int | Expr' :+: Expr' | Expr' :-: Expr'
+
+eval' :: Expr' -> Int 
+eval' (Lit' n)     = n
+eval' (e1 :+: e2) = (eval' e1) + (eval' e2)
+eval' (e1 :-: e2) = (eval' e1) - (eval' e2)
+
+instance Show Expr' where
+	show (Lit' n) = show n
+	show (e1 :+: e2) = "(" ++ show e1 ++ "+" ++ show e2 ++ ")"
+	show (e1 :-: e2) = "(" ++ show e1 ++ "-" ++ show e2 ++ ")"
+	
+size' :: Expr' -> Int 
+size' (Lit' _ ) = 0
+size' (e1 :+: e2) = 1 + size' e1 + size' e2
+size' (e1 :-: e2) = 1 + size' e1 + size' e2
+
