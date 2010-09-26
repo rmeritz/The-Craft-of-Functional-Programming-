@@ -2,10 +2,18 @@
 --Ch. 11 Program Development 
 
 --11.1 
-{-Bad syntax?
-[m,n ..p]
- |(p-n)> (n-m) = []
- |otherwise = [m] ++ [n,(n+n-m) .. p]-}
+
+{---This was the example given in the book and it doesn't work either. Parse error on ..
+--Could not find more info an how .. is defined in the Prelude
+-- Its built in but I don't think I can hide it.
+[m .. n] 
+	|m> n = []
+	|otherwise = m : [m+1 .. n]-}
+
+----Bad syntax? Need Emum.
+--[m,n .. p]
+-- |(p-n)> (n-m) = []
+-- |otherwise = [m] ++ [n,(n+n-m) .. p]
  
  --11.2 
  

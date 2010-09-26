@@ -1,5 +1,7 @@
---The Craft of Functional Programing 
+--The Craft of Functional Programming 
 --Ch. 14 Introducing Algebraic Types 
+
+import Data.Time 
 
 --14.1
 
@@ -42,7 +44,7 @@ weatherBrazil _ = Hot
 --14.4
 
 data Shape  = Circle Float | Rectangle Float Float | Triangle Float Float Float
-	deriving (Eq, Ord,Show,Read)
+	deriving (Ord,Show,Read)
 
 perimeter :: Shape -> Float 
 perimeter (Circle r) = 2*pi*r
@@ -71,25 +73,25 @@ isRegular (Rectangle h w)
 isRegular (Triangle a b c)
 	|a==b && b==c && c==a = True
 	|otherwise = False
-	
---Why went I use the function do my arguements need to be in parens?
 
 --14.7
 
 --The dervived ordering is left to right lowest to greatest. 
 --The floats of the same shape are order lexiographially. 
---Exact documentation was found here http://www.haskell.org/onlinereport/derived.html
+--Documentation was found here http://www.haskell.org/onlinereport/derived.html
 
 --14.8
 
 --My pattern matching doesn't work in trying to define == over Shapes in a new way 
 
-{-instance Eq Shapes where
-  ((Circle a) == (Circle b)) = True && ((a==b) || ((a<0) && (b<0))) = True
-  ((Rectangle h w) == (Rectangle h' w')) && (((h==h') && (w==w')) || ((h==w') && (w==h'))) = True 
-  ((Triangle a b c) == (Triangle d e f)) && (([a b c] == [d e f]) || ([a b c] == [e d f]) || ([a b c] == [f e d])) = True
-  otherwise = False -}
+--Could use a permutations function instead for triangle
 
+instance Eq Shape where
+  (Circle a) == (Circle b) = a==b || (a<0 && b<0)
+  (Rectangle h w) == (Rectangle h' w') = ((h==h' && w==w') || (h==w' && w==h'))
+  (Triangle a b c) == (Triangle d e f) = (([a, b, c] == [d, e, f]) || ([a, b, c] == [e, d, f]) || ([a, b, c] == [f, e, d]))
+  _ == _ = False 
+   
 --14.9
 
 type CenterPoint = (Float, Float)
@@ -147,12 +149,9 @@ yInRange h1 c1 h2 c2 = (lowBound2 < lowBound1 && lowBound1 < highBound2)|| (lowB
 	highBound2 = h2 + yCrd(c2) 
 	
 overlap :: NewShape -> NewShape -> Bool 
-overlap (CircleN r1 c1) (CircleN r2 c2) 
-	|(centerToCenterDistance c1 c2) - r1 -r2 <=0 = True
-	|otherwise = False 
-overlap (RectangleN h1 w1 c1) (RectangleN h2 w2 c2)
-	|(xInRange w1 c1 w2 c2) && (yInRange h1 c1 h2 c2) = True
-	|otherwise = False 
+overlap (CircleN r1 c1) (CircleN r2 c2) = (centerToCenterDistance c1 c2) - r1 -r2 <=0 
+overlap (RectangleN h1 w1 c1) (RectangleN h2 w2 c2) = (xInRange w1 c1 w2 c2) && (yInRange h1 c1 h2 c2)
+
 --overlap (CircleN r c1) (RectangleN h w c2) 
 --	|(centerToCenterDistance c1 c2) - r - w <=0 = True
 --	|otherwise = False 
@@ -162,18 +161,26 @@ overlap (RectangleN h1 w1 c1) (RectangleN h2 w2 c2)
 
 --14.12
 
-data House = String | Int 
-	deriving (Eq, Ord, Show, Read)
+data House = Home String | Place Int 
+	deriving (Eq, Ord)
+
+instance Show House where
+	show (Home st) = st
+	show (Place int) = show int
 
 type City = String
 
 type State = String 
 
-type Zipcode = Int 
+type Zipcode = String
 
 type Address = (House, City, State, Zipcode) 
 
---I don't know if I actually did what the problem statement asks for. 
+exDress :: Address 
+exDress = ((Home "Home"), "Boston", "MA", "02120")
+
+showAddress :: Address -> String
+showAddress (h, c, s, z) = show h ++ "\n" ++ c ++", " ++ s ++", "++ show z
 
 --14.13
 
@@ -214,20 +221,7 @@ returnLoan loans entry = filter (/=entry) loans
 type CD = String
 type Video = String 
 
-type Day = Int 
-type Year = Int 
-
-data Date = When Year Month Day
-	deriving (Eq, Ord, Show, Read) 
-
-type DueDate = Date
-
---No clear what the best way to handle dates is. 
---I think the way I have it now cheaks the order correctly but it also allows you to easily use invalid dates. 
---I don't think that the way I have it now makes it easy to update today's date. 
---People have made libraries that do some of this for me. 
---Can we talk about how to use them. See example below. 
---http://www.cse.chalmers.se/alumni/bringert/darcs/parsedate/doc/
+type DueDate = Day
 
 data NewLibEntry = BookLoan Name Book DueDate | CDLoan Name CD DueDate | VidLoan Name Video DueDate  
 	deriving (Eq, Ord, Show, Read)  
@@ -235,22 +229,9 @@ data NewLibEntry = BookLoan Name Book DueDate | CDLoan Name CD DueDate | VidLoan
 type NewLibLoans = [NewLibEntry]
 
 exNewBib :: NewLibLoans
-exNewBib = [BookLoan "Alice" "Tintin" (When 1990 May 3), BookLoan "Anna" "Little Women" (When 1999 June 30), CDLoan "Alice" "Asterix" (When 1999 June 1), VidLoan "Rory" "Tintin" (When 1999 May 3)]
-
-type Author = String
-type Artist = String
-
-data BookInfo = Writer Author [Book] 
-	deriving (Eq, Ord)
-
-type BookList = [BookInfo]
-
-data CDInfo = MusicMaker Artist [CD]
-
-type CDList = [CDInfo]
+exNewBib = [BookLoan "Alice" "Tintin" (fromGregorian 1999 10 12), BookLoan "Anna" "Little Women" (fromGregorian 1888 09 10), CDLoan "Alice" "Asterix" (fromGregorian 2010 10 12), VidLoan "Rory" "Tintin" (fromGregorian 2000 10 12)]
 
 entryToItem :: NewLibEntry -> String  
---entryToItem (_ _ item _) = item Why cannot I just do this?
 entryToItem (BookLoan _ item _ ) = item
 entryToItem (CDLoan _ item _ ) = item
 entryToItem (VidLoan _ item _ ) = item 
@@ -265,8 +246,7 @@ entryToEntry (BookLoan _ _ _ ) = "BookLoan"
 entryToEntry (CDLoan _ _ _ ) = "CDLoan"
 entryToEntry (VidLoan _ _ _ ) = "VidLoan"
 
-entryToDueDate :: NewLibEntry -> Date 
---Why not entryToDueDate :: NewLibEntry -> DueDate ?
+entryToDueDate :: NewLibEntry -> DueDate 
 entryToDueDate (BookLoan _ _ dd ) = dd
 entryToDueDate (CDLoan _ _ dd ) = dd 
 entryToDueDate (VidLoan _ _ dd ) = dd 
@@ -292,53 +272,19 @@ allDueBackBeforeThen loans date = (map entryToItem . filter((<date).entryToDueDa
 personHasDueBeforeThen :: NewLibLoans -> Name -> DueDate -> [String]
 personHasDueBeforeThen loans name date = (map entryToItem . filter((<date).entryToDueDate). filter ((==name).entryToName)) loans
 
-monthCycle :: [Month]
-monthCycle = [January .. December] ++ [January]
-
-dropUntilMod :: (a -> Bool) -> [a] -> [a]
-dropUntilMod p [] = []
-dropUntilMod p (x:xs)
-	|p x = dropUntilMod p xs
-	|otherwise = xs
-
-nextMonth :: Month -> Month
-nextMonth m = head (dropUntilMod (/=m) monthCycle)
---Is there a cleaner way to write this?
-
 makeDueDate :: NewLibEntry -> NewLibEntry
-makeDueDate (BookLoan n bk dd ) = (BookLoan n bk (addMonth dd))
-	where 
-	addMonth (When year month day)
-		|(month == December) = (When (year+1) January day) 
-		|otherwise = (When year (nextMonth month) day) 
+makeDueDate (BookLoan n bk dd ) = (BookLoan n bk (addGregorianMonthsRollOver 1 dd))
+makeDueDate (CDLoan n cd dd ) = (CDLoan n cd (addDays 7 dd))
+makeDueDate (VidLoan n vid dd ) = (VidLoan n vid (addDays 3 dd))
 
-makeDueDate (CDLoan n cd dd ) = (CDLoan n cd (addWeek dd))
-	where 
-	addWeek (When year month day)
-		|((day >= 23) && (month/= December)) = (When year (nextMonth month) (day+7-30))
-		|(day >= 23) = (When (year+1) (nextMonth month) (day+7-30))
-		|otherwise = (When year month (day+7))
-		
-makeDueDate (VidLoan n vid dd ) = (VidLoan n vid (add3Days dd))
-	where
-	add3Days (When year month day)
-		|((day >= 27) && (month /= December)) = (When year (nextMonth month) (day+3-30))
-		|(day >= 23) = (When (year+1) (nextMonth month) (day+3-30))
-		|otherwise = (When year month (day+3))
-
---How do I deal with the fact that months are not all the same lenght?
---I probably what handle make an new data type with the days are a propert as the lenght of months somehow...
---Right now I'm just saying that they all have 30 days. 
---This doesn't work obviously. 
-
-today :: Date 
-today = When 2010 September 24
+today :: Day
+today = fromGregorian 2010 10 20
 
 type LoanType = String 
 type Item = String
 
 addLoan :: NewLibLoans -> Name -> LoanType -> Item -> NewLibLoans 
-addLoan existingLoans name typeOfLoan title 
+addLoan existingLoans name typeOfLoan title
 	|(typeOfLoan == "Book") = (makeDueDate(BookLoan name title today)):existingLoans 
 	|(typeOfLoan == "CD") = (makeDueDate(CDLoan name title today)):existingLoans 
 	|(typeOfLoan == "Video") = (makeDueDate(VidLoan name title today)):existingLoans 
@@ -412,7 +358,7 @@ size (Div e1 e2) = 1 + size e1 + size e2
 
 --14.18
 
-data Ops = Add | Sub | Mul | Div | Mod
+{-data Ops = Add | Sub | Mul | Div | Mod
 
 instance Show Ops where
 	show Add = " + "
@@ -437,11 +383,15 @@ evalM (Op Mod e1 e2) = (evalM e1) `mod` (evalM e2)
 
 sizeM :: ModExpr -> Int 
 sizeM (Lit _ ) = 0
-sizeM (Op _ e1 e2) = 1 + sizeM e1 + sizeM e2
+sizeM (Op _ e1 e2) = 1 + sizeM e1 + sizeM e2-}
 
 --14.19 
 
 data NTree = NilT | NodeT Int NTree NTree
+
+instance Show NTree where
+	show (NilT) = "NilT"
+	show (NodeT int t1 t2 ) = "[" ++ (show int) ++" "++ (show t1) ++ " " ++ (show t2) ++ "]" 
 
 sumTree :: NTree -> Int
 sumTree NilT           = 0
@@ -491,3 +441,179 @@ size' (Lit' _ ) = 0
 size' (e1 :+: e2) = 1 + size' e1 + size' e2
 size' (e1 :-: e2) = 1 + size' e1 + size' e2
 
+--14.21
+
+--Need Maybe
+
+rightTree :: NTree -> NTree
+rightTree (NodeT _ _ tr ) = tr
+
+leftTrees :: NTree -> NTree 
+leftTrees (NodeT _ tl _ ) = tl
+ 
+--14.22
+
+allInt :: NTree -> [Int]
+allInt NilT = []
+allInt (NodeT int t1 t2) = [int] ++ (allInt t1) ++ (allInt t2)
+
+isTreeElem :: Int -> NTree -> Bool 
+isTreeElem n t = (filter (==n) (allInt t)) /=[]
+
+--14.23
+
+--I really need the Maybe type here
+
+maxTree :: NTree -> Int 
+maxTree t = foldr1 max (allInt t)
+
+minTree :: NTree -> Int
+minTree t = foldr1 min (allInt t)
+
+--14.24
+
+reflect :: NTree -> NTree
+reflect NilT = NilT 
+reflect (NodeT int t1 t2) = (NodeT int t2 t1) 
+
+--reflect.reflect brings back the orginal tree
+
+--14.25
+
+collapse :: NTree -> [Int] 
+collapse NilT = []
+collapse (NodeT int tl tr) = (collapse tl) ++ [int] ++ (collapse tr) 
+
+qSort :: Ord a => [a] -> [a]
+qSort []     = []
+qSort (x:xs) = qSort [z|z<-xs,z<=x] ++ [x] ++ qSort [z|z<-xs,z>x]
+
+sort :: NTree -> [Int]
+sort t = qSort (collapse t)
+
+--14.26
+
+data Person = Adult Name Address Biog | Child Name
+data Biog   = Parent String [Person] | NonParent String
+
+showPerson (Adult nm ad bio) = show nm ++ showAddress ad ++ showBiog bio
+showPerson (Child nm) = show nm
+
+showBiog (Parent st perList) = st ++ concat (map showPerson perList) 
+showBiog (NonParent st) = st
+
+ --14.27
+ 
+data Expr = Lit Int | Op Ops Expr Expr | If BExp Expr Expr
+
+data Ops = Add | Sub | Mul | Div | Mod
+
+data BExp = BoolLit Bool | And BExp BExp | Not BExp | Equal Expr Expr | Greater Expr Expr
+
+instance Show Ops where
+	show Add = " + "
+	show Sub = " - "
+	show Mul = " * "
+	show Div = " div "
+	show Mod = " mod "
+
+instance Show Expr where
+	show (Lit n) = show n
+	show (Op op e1 e2) = "(" ++ show e1 ++ (show op) ++ show e2 ++ ")"
+	show (If bexp e1 e2) ="( If " ++ show bexp ++ show e1 ++ show e2 ++ ")"
+
+instance Show BExp where
+	show (BoolLit b) =  show b  
+	show (And b1 b2) = "(" ++ show b1 ++ " && " ++ show b2 ++ ")"
+	show (Not b) = "(" ++ " not " ++ show b ++ ")"
+	show (Equal e1 e2) = "(" ++ (show e1) ++ " == " ++ (show e2) ++ ")"
+	show (Greater e1 e2) = "(" ++ (show e1) ++ " > " ++ (show e2) ++ ")"
+	
+eval :: Expr -> Int
+eval (Lit n)     = n
+eval (Op Add e1 e2) = (eval e1) + (eval e2)
+eval (Op Sub e1 e2) = (eval e1) - (eval e2)
+eval (Op Mul e1 e2) = (eval e1) * (eval e2)
+eval (Op Div e1 e2) = (eval e1) `div` (eval e2) 
+eval (Op Mod e1 e2) = (eval e1) `mod` (eval e2) 
+eval (If bexp e1 e2) 
+	|bEval bexp = eval e1
+	|otherwise = eval e2 
+
+bEval :: BExp -> Bool 
+bEval (And b1 b2) = bEval b1 && bEval b2
+bEval (Not b) = not (bEval b)
+bEval (Equal e1 e2) = eval e1 == eval e2
+bEval (Greater e1 e2) = eval e1 > eval e2
+
+--14.28
+
+data Tree a = Nil | Node a (Tree a) (Tree a)
+	deriving (Eq,Ord,Show,Read)
+
+occursT :: (Eq a) => Tree a -> a -> Int
+occursT Nil p = 0
+occursT (Node n t1 t2) p
+  | n==p        = 1 + occursT t1 p + occursT t2 p
+  | otherwise   =     occursT t1 p + occursT t2 p
+
+depthT :: Tree a -> Int
+depthT Nil = 0
+depthT (Node n t1 t2) = 1 + max (depthT t1) (depthT t2)
+
+collapseT :: Tree a -> [a]
+collapseT Nil = []
+collapseT (Node x t1 t2) = collapseT t1 ++ [x] ++ collapseT t2
+ 
+lTree :: Tree a -> Tree a 
+lTree (Node n t1 t2) = t1
+
+rTree :: Tree a -> Tree a 
+rTree (Node n t1 t2) = t2
+
+sortT :: (Ord a) =>  Tree a -> [a]
+sortT t = qSort (collapseT t)
+
+reflectT :: Tree a -> Tree a
+reflectT Nil = Nil
+reflectT (Node a t1 t2) = (Node a t2 t1) 
+
+data PolyExpr a = PolyLit a | PolyAdd (PolyExpr a) (PolyExpr a) | PolySub (PolyExpr a) (PolyExpr a)
+
+peval :: (Num a) => PolyExpr a -> a
+peval (PolyLit n)     = n
+peval (PolyAdd e1 e2) = (peval e1) + (peval e2)
+peval (PolySub e1 e2) = (peval e1) - (peval e2)
+
+instance (Show a)=> Show (PolyExpr a) where
+	show (PolyLit n) = show n
+	show (PolyAdd e1 e2) = "(" ++ show e1 ++ "+" ++ show e2 ++ ")"
+	show (PolySub e1 e2) = "(" ++ show e1 ++ "-" ++ show e2 ++ ")"
+	
+sizep :: PolyExpr a -> Int 
+sizep (PolyLit _ ) = 0
+sizep (PolyAdd e1 e2) = 1 + sizep e1 + sizep e2
+sizep (PolySub e1 e2) = 1 + sizep e1 + sizep e2
+
+--14.29
+
+twist :: Either a b -> Either b a
+twist (Left a) = (Right a)
+twist (Right b) = (Left b)
+
+--14.30
+
+--either :: (a -> c) -> (b -> c) -> Either a b -> c
+--either f g (Left x)  = f x
+--either f g (Right y) = g y
+
+--applyLeft :: (a -> c) -> Either a b -> c
+--applyLeft f (Left x)  = f x
+--applyLeft f (Right _) = error "applyLeft applied to Right"
+
+applyLeft :: (a -> c) -> Either a b -> c
+applyLeft f e = either f (\a -> error "applyLeft applied to Right") e 
+
+--14.30
+
+ 

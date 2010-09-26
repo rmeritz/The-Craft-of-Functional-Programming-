@@ -3,14 +3,9 @@
 
 --12.1
 
-{-/= :: a -> a -> Bool 
-/= a b = not (a==b)-}
+{-(/=) :: a -> a -> Bool 
+(/=) a b = not (a==b)-}
 
-{---This was the example given in the book and it doesn't work either. Parse error on ..
---Could not find more info an how .. is defined in the Prelude
-[m .. n] 
-	|m> n = []
-	|otherwise = m : [m+1 .. n]-}
 
 --12.2
 
@@ -46,38 +41,39 @@ instance Visible Bool where
   toString False = "False"
   size _         = 1
 
---I feel very lost. Why would I want to make my own class. 
---My syntax doens't seem to work anyway. 
+instance (Visible a, Visible b)  => Visible (a, b) where
+	toString (a, b)  = "("++(toString a)++","++(toString b)++")"
+	size _ = 2
 
-{-instance (Visible a, Visible b)  => Visible (a, b) where
-	toString (a, b)  = (toString a, toString b)
-	size _ = 1 -}
-
-{-instance Visible (Bool,Bool,Bool) where
-	toString  (True,True,True) = "(True,True,True)"
-	toString  (False,True,True) = "(False,True,True)"
-	toString  (True,False,True) = "(True,False,True)"
-	toString  (False,False,True) = "(False,False,True)" 
-	toString  (True,True,False) = "(True,True,False)"
-	toString  (False,True,False) = "(False,True,False)"
-	toString  (True,False,False) = "(True,False,False)"
-	toString  (False,False,False) = "(False,False,False)"
-	size _ = 1 	-}
+instance (Visible a, Visible b, Visible c) => Visible (a, b, c) where
+	toString  (a, b, c) = "(" ++ (toString a)++ ", "++ (toString b) ++ ", "++ (toString c)++ ")"
+	size _ = 3
 
 --12.5
 
-instance Visible Int where
-	toString int  = show int
-  	size _        = 1
+digits :: Int -> [Int]
+digits n
+	|(mod n 10) /= n = digits (div n 10) ++ [mod n 10]
+	|otherwise = [n] 
 
---Am I supposed to be using show?
+instance Visible Int where
+	toString 0 = "0"
+	toString 1 = "1"
+	toString 2 = "2"
+	toString 3 = "3"
+	toString 4 = "4"
+	toString 5 = "5"
+	toString 6 = "6"
+	toString 7 = "7"
+	toString 8 = "8"
+	toString 9 = "0"
+	toString n = foldr1 (++) (map toString (digits n))
+  	size _        = 1
 
 --12.6
 
---I'm confused. 
-
---compare :: (Ord a) => a -> a -> Ordering 
---comparer  x y = size x <= size y 
+comparer :: (Visible a, Visible a1) => a -> a1 -> Bool 
+comparer  x y = size x <= size y 
 
 --12.7
 
@@ -108,29 +104,26 @@ instance Visible Int where
 
 --12.7
 
---Is this what they are looking for?
---If so it doesn't load. 
---I feel like I'm missing a fundamental concept in this section. 
-
-{-instance (Ord a, Ord b) => Ord (a,b) where 
+{-
+instance (Ord a, Ord b) => Ord (a,b) where 
 	compare (x,y) (x',y')
 		|(x==x') && (y==y') =EQ
 		|(x>x')             =GT
 		|(x==x') && (y>y')  =GT
 		|otherwise          =LT
-		
-	(x,y) <= (x',y')          =  compare (x,y) (x',y') /= GT
+		-}
+{-	(x,y) <= (x',y')          =  compare (x,y) (x',y') /= GT
   	(x,y) < (x',y')           =  compare (x,y) (x',y') == LT
    	(x,y) >= (x',y')          =  compare (x,y) (x',y') /= LT
-   	(x,y) > (x',y')           =  compare (x,y) (x',y') == GT
+   	(x,y) > (x',y')           =  compare (x,y) (x',y') == GT-}
 
-	max (x,y) (x',y')
+{-	max (x,y) (x',y')
          | (x,y) <= (x',y')    =  (x',y')
          | otherwise =  (x,y)
     min (x,y) (x',y')
             | (x,y) <= (x',y')    =  (x,y)
-         | otherwise =  (x',y')
-         
+         | otherwise =  (x',y')-}
+{-      
 instance Ord b => Ord [b] where
 	compare _ [] = GT
 	compare [] _ = LT
@@ -152,24 +145,9 @@ instance Ord b => Ord [b] where
 
 --12.9
 
---This is the prelude but where is the def. of ord on Bool actually derived? 
 --data  Bool  =  False | True     deriving (Eq, Ord, Enum, Read, Show, Bounded)
 
 --True < False == True
 
 --(<) seems to be defined lexiographically on lists of tuples 
-
---12.10
-
---showBoolFun :: (Bool -> Bool) -> String 
---I don't understand what this function is supposed to do. (Show the results of the Function as a table)
---Whats an example of a (Bool -> Bool)?
-
---Same as above
---showBoolFunGen :: (a -> String) -> (Bool -> a) -> String
-
---12.11
-
---The instructions for the excercises for this whole chapter seem a little crptic to me. 
---instance Show b => Show (Bool b -> Bool b) where
  

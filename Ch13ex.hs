@@ -1,4 +1,4 @@
---The Craft of Functional Programing 
+--The Craft of Functional Programming 
 --Ch. 13 Checking Types 
 
 --13.1
@@ -53,28 +53,17 @@ f [] [] :: a -> b
 
 so
 h :: [a] -> (a -> a)
-h x = f x x 
---Is this right?-}
-
---13.7
-
---Write a program that checks wheather two types are unifiable returns their unifcation if possible 
---zircon = zircon 
---
+h x = f x x -}
 
 --13.8
 
-{-curry ::((a,b) -> c) -> a -> b -> c
+curry ::((a,b) -> c) -> a -> b -> c
 uncurry :: (a -> b -> c) -> (a,b) -> c
 id :: a -> a 
+id:: (b -> c) -> (b -> c)
 
---I had to look them up I have trouble "seeing" the answers.
 curry id :: a -> b -> (a,b)
-uncurry id :: (b -> c, b) -> c
-curry (curry id) :: a -> b -> b1 -> ((a,b), b1)
-uncurry (uncurry id) :: (b -> b1 -> c, b1) -> c
- -}
+uncurry id :: ((b -> c), b) -> c --Assumes id:: (b -> c) -> (b -> c)
+curry (curry id) :: a -> b -> b1 -> ((a,b), b1) --fix--Assumes id :: (a,b) -> (a,b)
+uncurry (uncurry id) :: (b -> b1 -> c, b1) -> c --Assumes id:: (b -> c) -> (b -> c)
  
---13.9 
-
---How is this any different than 13.7 
