@@ -614,6 +614,174 @@ twist (Right b) = (Left b)
 applyLeft :: (a -> c) -> Either a b -> c
 applyLeft f e = either f (\a -> error "applyLeft applied to Right") e 
 
---14.30
+--14.31
 
- 
+typeChanger :: (a -> b) -> a -> Either b c
+--typeChanger f = \x -> (Left (f x))  
+typeChanger f x = (Left (f x))
+
+typeChangerR :: (a -> b) -> a -> Either c b
+typeChangerR f = \x -> (Right (f x))  
+
+--14.32
+
+joiner :: (a -> c) -> (b -> d) -> Either a b -> Either c d
+--joiner f g (Left x) = Left (f x) 
+--joiner f g (Right y) = Right(g y)
+--joiner f g e = either (\x -> Left (f x)) (\x -> Right (g x)) e
+joiner f g = either (Left .f) (Right .g)
+--joiner f g = either (typeChanger f) (typeChangerR g)
+
+--14.33
+
+data GTree a = Leaf a | Gnode [GTree a]
+
+leafCount :: (GTree a) -> Int 
+leafCount (Leaf a) = 1
+leafCount (Gnode xs) = sum (map leafCount xs) 
+
+gDepth :: (GTree a) -> Int 
+gDepth (Leaf _ ) = 0
+gDepth (Gnode []) = 1
+gDepth (Gnode xs) = 1 + (foldr1 max (map gDepth xs)) 
+
+gSum :: (GTree Int) -> Int 
+gSum (Leaf x) = x
+gSum (Gnode xs) = sum (map gSum xs) 
+
+isElemG :: (Eq a) => a -> (GTree a) -> Bool 
+isElemG e (Leaf b) = e==b 
+isElemG e (Gnode xs) = (filter (==True) (map (isElemG e) xs)) /= []
+
+gMap :: (a -> b) -> (GTree a) -> (GTree b)
+gMap f (Leaf x) = (Leaf (f x))
+gMap f (Gnode xs) = (Gnode (map (gMap f) xs))
+
+flatten :: (GTree a) -> [a]
+flatten (Leaf x) = [x]
+flatten (Gnode xs) = foldr (++) [] (map flatten xs)
+
+--14.34
+
+--An empty GTree is GTree[]
+
+--14.35
+
+process :: [Int] -> Int -> Int -> Int
+process xs m n = maybe 0 id (bangbangerr xs m n)
+-- |(length xs) > m || (length xs > n) = 0
+-- |otherwise =  xs!!m + xs!!n 
+  
+bangbangerr :: [Int] -> Int -> Int  -> Maybe Int
+bangbangerr xs n m
+	| (length xs) > n && (length xs) > m = Just ((xs!!n) + (xs!!m)) 
+	| otherwise = Nothing
+	
+--14.37
+
+squashMaybe :: Maybe (Maybe a) -> Maybe a 
+squashMaybe Nothing = Nothing 
+squashMaybe (Just (Nothing)) = (Nothing)	
+squashMaybe (Just (Just x)) = (Just x)
+
+--14.38
+
+mapMaybe :: (a -> b) -> Maybe a -> Maybe b
+mapMaybe g Nothing  = Nothing
+mapMaybe g (Just x) = Just (g x)
+
+--(.) :: (b -> c) -> (a -> b) -> (a -> c)
+
+{-ex
+f:: a -> Just b 
+g:: b -> Just c 
+goal : a -> Just c
+
+f:: a -> Just b 
+g:: b -> Nothing 
+goal : a -> Nothing
+
+f :: a -> Nothing 
+g :: b -> Just c
+goal :: a -> Just c 
+
+f:: a -> Nothing  
+g:: b -> Nothing
+goal :: a -> Nothing -}
+
+composeMaybe :: (a -> Maybe b) -> (b -> Maybe c) -> (a -> Maybe c)
+composeMaybe f g = \x -> squashMaybe (mapMaybe g (f x))
+
+--14.39
+
+data Err a = OK a | Error String
+
+mapErr :: (a -> b) -> Err a -> Err b
+mapErr g (Error str)  = (Error str)
+mapErr g (OK x) = OK (g x)
+
+maybeE :: b -> (a -> b) -> (Err a) -> b
+maybeE n f (Error  _ )  = n
+maybeE n f (OK x) = f x
+
+squashErr :: Err (Err a) -> Err a 
+squashErr (Error st) = (Error st) 
+squashErr (OK (Error st)) = (Error st)	
+squashErr (OK (OK x)) = (OK x)
+
+composeErr :: (a -> Err b) -> (b -> Err c) -> (a -> Err c)
+composeErr f g = \x -> squashErr (mapErr g (f x))
+
+--14.44
+
+data Edit = Change Char |
+            Copy |
+            Delete |
+            Insert Char |
+            Kill  |
+            Switch
+            deriving (Eq,Show)
+
+
+
+transform :: String -> String -> [Edit]
+transform [] [] = []
+transform xs [] = [Kill]
+transform [] ys = map Insert ys
+transform ex@(x:x':xs) ey@(y:y':ys)
+  | (x==y') && (x'==y) = Switch :transform xs ys
+transform (x:xs) (y:ys)     
+  | x==y        = Copy : transform xs ys                    
+  | otherwise   = best [ Delete   : transform xs (y:ys) ,
+                         Insert y : transform (x:xs) ys ,
+                         Change y : transform xs ys ]
+
+best :: [[Edit]] -> [Edit]
+best [x]   = x
+best (x:xs) 
+  | cost x <= cost b    = x
+  | otherwise           = b
+      where 
+      b = best xs
+
+cost :: [Edit] -> Int
+cost = length . filter (/=Copy)
+
+edit :: [Edit] -> String -> String
+edit [] str = str
+edit [Kill] _ = ""
+edit ((Change c):es) (s:ss) = (c:(edit es ss))
+edit (Copy:es) (s:ss) = (s: (edit es ss))
+edit (Delete:es) (s:ss) = edit es ss
+edit ((Insert c): es) str = (c: (edit es str))
+edit (Switch:es) (s:s':ss) = (s':s: (edit es ss))
+
+showTransforms :: [Edit] -> String -> [String]
+showTransforms [] "" = []
+showTransforms [] ss = [ss]
+showTransforms [Kill] ss = [ss]
+showTransforms ((Change c):es) (s:ss) = (c:ss) : (c ++ showTransforms es (c:ss)) 
+	 
+
+--
+	  
