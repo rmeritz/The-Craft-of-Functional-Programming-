@@ -976,90 +976,12 @@ size (Node x t1 t2) = 1 + size t1 + size t2
 Proof:
 size tr < 2^(depth tr) (hypo)
 
-Prove P(nil):
 if tr = NilT 
 size NilT = 0 
-depth NilT = 0
-0 < 2^0
-0 < 1
-
-
-Assumming  P(t1) and P(t2), prove P(Node x t1 t2):  
-size t1 < 2^(depth t1) 
-size t2 < 2^(depth t2) 
-
-size (Node x t1 t2) < 2^(depth (Node x t1 t2)
-1 + size t1 + size t2 < 2^(1 + max (depth t1) (depth t2))
-ln(1 + size t1 + size t2) < (1 + max (depth t1) (depth t2))ln(2)
-ln((1/2) +(1/2)*(size t1) + (1/2)*(size t2))
-	 < (1 + max (depth t1) (depth t2)
-ln((1/2) + (1/2)*(2^(depth t1) + (1/2)*(2^(depth t2))
-	< (1 + max (depth t1) (depth t2))
-ln((1/2) + 1 + 1) <
-	< (1 + max (depth t1) (depth t2))
-ln(2.5) - 1 <  max (depth t1) (depth t2)
-a negitive number < a postive number 
-
---14.55
-
-occurs NilT p = 0
-occurs (NodeT n t1 t2) p
-| n==p        = 1 + occurs t1 p + occurs t2 p
-| otherwise   =     occurs t1 p + occurs t2 p
-
-lenght [] = 0 
-lenght x:xs = 1 + lenght xs
-
-filter p xs = [ x  | x <- xs, p x]
-
-collapse NilT = []
-collapse (NodeT x t1 t2) = collapse t1 ++ [x] ++ collapse t2
-
-Prove: 
-occurs tr x = lenght(filter (==x) (collapse tr))
-
-Base Case:
-occurs Nil x = 0 
-lenght(filter (==x) (collapse Nil)) = lenght(filter (==x) [])
-=length([])=0
-0=0
-
-Assume:
-occurs t1 x = lenght(filter (==x) (collapse t1))
-occurs t2 x = lenght(filter (==x) (collapse t2))
-
-Induction:
-if x/=i 
-occurs (NodeT i t1 t2) x
-	 = lenght (filter (==x) (collapse (Node i t1 t2))  
-occurs t1 x + occurs t2 x
-	 = lenght (filter (==x) (collapse t1 + [i] + collapse t2))
-	 = lenght (filter (==x) collapse t1))
-	 + lenght (filter (==x) collaspe t2))
-
-(filter (==x) (collapse t1))
-
---14.56
-Prove:
-twist . twist = id
-
-twist . twist (Left a) = twist (Right a) = (Left a)
-id (Left a) = (Left a) 
-(Left a) = (Left a)
-
-twist . twist (Right a) = twist (Left a) = (Right a)
-id (Right a) = (Right a) 
-(Right a) = (Right a)
-
---14.57 
-
-mapTree f Nil = Nil
-mapTree f (Node x t1 t2)
-  = Node (f x) (mapTree f t1) (mapTree f t2)
+de
  
-map f [] = []
-map f (x:xs) = f x : map f xs
 
-mapTree f  = (map f) . collaspse
 
- 
+	 
+	 
+	  

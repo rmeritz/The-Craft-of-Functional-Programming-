@@ -19,4 +19,3 @@ calculator xs = calc [] xs
   calc (n1:n2:ns) ((Div):es) = calc ((n1 / n2) : ns) es
   calc _ _ = (error "Need to be more stacked")
   	
-	 
