@@ -663,7 +663,7 @@ flatten (Gnode xs) = foldr (++) [] (map flatten xs)
 
 --14.34
 
---An empty GTree is GTree[]
+--An empty GTree is GNode[]
 
 --14.35
 
@@ -983,7 +983,6 @@ depth NilT = 0
 0 < 2^0
 0 < 1
 
-
 Assumming  P(t1) and P(t2), prove P(Node x t1 t2):  
 size t1 < 2^(depth t1) 
 size t2 < 2^(depth t2) 
@@ -1053,13 +1052,39 @@ id (Right a) = (Right a)
 
 --14.57 
 
-mapTree f Nil = Nil
-mapTree f (Node x t1 t2)
-  = Node (f x) (mapTree f t1) (mapTree f t2)
+--To prove P(x) for GTree the Leaf case must be proved P(Leaf) and the Node case must be proved where P(Node [x:xs]), the node proof is done the same way any proof by induction over a list is performed. 
+
+data GTree a = Leaf a | Gnode [GTree a]
+
+mapTree f (Leaf a) = (Leaf (f a))
+mapTree f (GNode []) = (GNode []) 
+mapTree f (GNode (x:xs)) = (GNode ((f x): mapTree f xs)) 
  
 map f [] = []
 map f (x:xs) = f x : map f xs
 
-mapTree f  = (map f) . collaspse
+collapse (Leaf a) = [a] 
+collapse (GNode []) = []
+collapse (GNode (x:xs)]) = (collapse x) ++ (collapse xs)
 
- 
+map f (xs++ys) = map f xs ++ map f ys
+
+Prove:
+collapse . (mapTree f)  = (map f) . collapse
+
+Base:
+collapse . mapTree f (Leaf a) = collapse (Leaf (f a)) = [(f a)]
+(map f) . collaspe (Leaf a) = map f [a] = [(f a)]
+[(f a)] = [(f a)]
+
+Induction: 
+collapse . mapTree f (GNode x:xs) 
+	= collapse (GNode (f x: mapTree f xs)) 
+ 	= collapse (f x) ++ collapse (mapTree f xs)
+	= (f x) ++ collapse (mapTree f xs) 
+
+(map f). collapse (GNode [xs]) 
+	= (map f) . (collapse x ++ collapse xs)
+	= map f (collapse x) ++ map f (collapse xs)
+	= (f x) ++ map (collaspe xs) 
+
