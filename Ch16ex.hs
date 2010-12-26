@@ -118,18 +118,6 @@ valueF (StoF sto) v = sto v
 
 updateF :: StoreF -> Var -> Int -> StoreF
 updateF (StoF sto) v n = StoF (\w -> if v==w then Just n else sto w)
---not sure about my use of just in this context. 
-
---Once I incorperate Maybe how do I get an error? 
---Or is that just what Nothing means by defult?
-
-{-Is there a way to test it completely without
-defining an instance of a show-like function over the type? 
-What behviors should this function have?
-Is there an accepted way to show "Nothing"?-}
-
-{-Is there a syntax creating tests in Haskell similar to
-the functionality of Racket tests ? -}  
 
 --valueF (updateF initialF "a" 5) "a" => Just 5
 --valueF (updateF initialF "a" 5) "b" => Nothing
@@ -137,9 +125,7 @@ the functionality of Racket tests ? -}
 --16.4
 
 {-Instead of an error provide a test that shows 
-if a variable is in a given store. 
-Also, how would the signiture need to be modifed to 
-provide a test? -} 
+if a variable is in a given store. -}
 
 testVal :: Store -> Var -> Bool 
 testVal (Sto []) v = False
@@ -147,19 +133,13 @@ testVal (Sto ((n,vstored):sto)) v
 	| v == vstored = True
 	| otherwise = testVal (Sto sto) v
 
---Is this what is meant by a test?
-
 --16.5
 
 --setAll should set every variable to the value n
 
---Defined for Store represented by a list:
-
 --setAll :: Int -> Store
---setAll n = Sto [( n, _ )]
 
---Can/How can I actually do this? 
---I don't thinks it is possible
+--It cannot be defined for Store as a list. 
 
 --Defined for Store represent by a function:
 
@@ -171,52 +151,243 @@ setAllF n = (StoF (\v -> Just n))
 --16.6
 
 --Design a ADT for the library database
-{-I wanted to make it based on functions bc that is more
-confusing to me. -}
+{-Made functions instead of lists to to understand 
+lambda beter. It probably actually just make more sense to
+have a list. Currently order to acess the inforamtion I
+want I have to store it twice.  -} 
 
 type Person = String
 type Book = String
 type Borrowers = [Person]
+type Loans = [Book]
 
-newtype Database = DB (Book -> Maybe Borrowers) 
-{-I don't think this works because I need to get
-information in both directions. (See books)
-(Book -> [Person]) and (Person -> [Book])
-How to I deal with the functions when there are
-multiple answers. (books & borrowers)
-I mean a [Person] not just a Person. 
-Is there a way I can implement this if my
-database is a function? Or does it have to be list based?-}
+newtype DBByBook = DBBook (Book -> Borrowers)
+newtype DBByBorrower = DBBorrower (Person -> Loans)
+type Database = (DBByBook, DBByBorrower)
 
-newDB :: Database 
-newDB = DB (\b -> Nothing) 
+newDB :: Database
+newDB = (DBBook (\b -> []), DBBorrower (\p -> []))
 
-books :: Database -> Person -> Maybe [Book] 
-books (DB entries) person = --? (\p if p==person then  
+books :: Database -> Person -> Loans
+books (bookDb, DBBorrower borrowerDb) p = borrowerDb p 
 
-borrowers :: Database -> Book -> Maybe Borrowers 
-borrowers (DB entries) book = entries book
+borrowers :: Database -> Book -> Borrowers 
+borrowers (DBBook bookDb, borrowerDb) b = bookDb b
 
 borrowed :: Database -> Book -> Bool 
-borrowed (DB entries) book 
-	= Nothing /= borrowers (entries book)
+borrowed (DBBook bookDb, borrowerDb) book	
+	= (bookDb book) == []
 
 numBorrowed :: Database -> Person -> Int 
-numBorrowed db person = maybe 0 length (books db person)
---I think I finally understand how to use maybe
+numBorrowed db person = length (books db person)
 
-{-Not confident about below functions functioning. 
-They definately aren't dealing with multiple persons having
-the same book on loan. -}
+makeLoan :: Database -> Person -> Book -> Database 
+makeLoan (DBBook bookDB, DBBorrower borrowerDB) p b 
+	= (DBBook (\book -> 
+	if book==b 
+	then (p : (bookDB book))
+	else (bookDB book)),
+	(DBBorrower (\person -> 
+	if person==p 
+	then b : (borrowerDB person)
+	else (borrowerDB person))))
 
+returnLoan :: Database -> Person -> Book -> Database 
+returnLoan (DBBook bookDB, DBBorrower borrowerDB) p b 
+	= (DBBook (\book -> 
+	if book==b 
+	then remove b (bookDB book)
+	else (bookDB book)), 
+	DBBorrower  (\person -> 
+	if person==p 
+	then remove p (borrowerDB person)
+	else (borrowerDB person)))
+	where 
+		remove _ [] = []
+		remove n (x:xs) 
+			| n==x = xs
+			| otherwise = remove n xs
 
-makeLoan :: Database -> Person -> Book -> Database
-makeLoan (DB entries) person book 
-	= DB (\b -> if b==book then Just person else entries
-	book)    
+--16.3
 
-returnLoan :: Database -> Person -> Book -> Database
-returnLoan (DB entries) person book 
-	= DB (\b -> if b==book then Nothing else entries book)
+{-Calculation:
 
+"abcde" ++ "f" = "abcdef"
+
+init "abdcef" 
+= take (length "abcdef" - 1) "abcde 
+= take ( 1 + length "bcdef" - 1) "abcdef"
+= take ( 1 + 1 + length "cdef" - 1) "abcdef"
+= take ( 1 + 1 + 1 + length "def" - 1) "abcdef"
+= take ( 1 + 1 + 1 + 1 + length "ef" - 1) "abcdef"
+= take ( 1 + 1 + 1 + 1 + 1 + length "f" - 1) "abcdef"
+= take ( 1 + 1 + 1 + 1 + 1 + 1 + 1 +  length "" - 1) "abcdef"
+= take ( 1 + 1 + 1 + 1 + 1 + 1 + 1 + 0 - 1) "abcdef"
+= take 5 "abcdef" 
+= "a" : take 4 "abcde"  
+= "a" : "b" : take 3 "cdef" 
+= "a" : "b" : "c" : take 2 "edef" 
+= "a" : "b" : "c" : "d" : take 1 "ef" 
+= "a" : "b" : "c" : "e" : take 0 "f"
+= "a" : "b" : "c" : "d" : "e" : []
+= "abcde"
+
+last "abcdef" 
+= "abcdef" !! (length "abcdef" - 1) 
+= "abcdef" !! (length "abcdef" - 1) 
+= "abcdef" !! ( 1 + length "bcdef" - 1) 
+= "abcdef" !! ( 1 + 1 + length "cdef" - 1) 
+= "abcdef" !! ( 1 + 1 + 1 + length "def" - 1) 
+= "abcdef" !! ( 1 + 1 + 1 + 1 + length "ef" - 1) 
+= "abcdef" !! ( 1 + 1 + 1 + 1 + 1 + length "f" - 1) 
+= "abcdef" !! ( 1 + 1 + 1 + 1 + 1 + 1 + 1 +  length "" - 1) 
+= "abcdef" !! ( 1 + 1 + 1 + 1 + 1 + 1 + 1 + 0 - 1) 
+= "abcdef" !! 5 
+= "f"
+
+-}
+
+--16.8 
+
+{- Example Operations: add2, add1, removeitem, add 3,
+removeitem, add 1, add 4, removeitem, removeitem
+
+Qu []
+Qu [2]
+Qu [2, 1]
+(2,  Qu [1])
+Qu [1, 3]
+(1, Qu [3])
+Qu [3, 1]
+Qu [3, 1, 4]
+(3, Qu [1, 4])
+(1, Qu [4])
+
+Qu []
+Qu [2]
+Qu [1, 2]
+(2, Qu [1])
+Qu [3, 1]
+(1, Qu [3])
+Qu [1, 3] 
+Qu [3, 1, 4]
+(3, Qu [1, 4]) 
+(1, Qu [4])
+
+Qu [] []
+Qu [] [2]
+Qu [] [1, 2] 
+remQ (Qu reverse [2, 1] []) = (2, Qu [1] [])
+Qu [1] [3]
+(1, Qu [] [3])
+Qu [] [1, 3] 
+Qu [] [4, 1, 3]
+remQ (Qu reverse [4, 1, 3] []) = (3, Qu [1, 4] [])
+(1, Qu [4] []) 
+-}
+
+--16.9 
+
+--module Deque ( Deque, emptyDQ, isEmptyDQ, addDQHead,addDQTail, remDQHead, remDQTail) 
+
+--Deque Implementation 1: 
+
+newtype Deque a = DQ [a] 
+
+emptyDQ = DQ []
+
+isEmptyDQ (DQ []) = True
+isEmptyDQ _ = False
+
+addDQHead x (DQ xs) = (DQ x:xs) 
+
+addDQTail x (DQ xs) = (DQ (xs ++ [x]))
+
+remDQHead dq@(DQ (x:xs))
+	| not (isEmptyDQ dq) = (x, (DQ xs))
+	| otherwise = error "remDQ"
+
+remDQTail dq@(DQ xs) 
+	| not (isEmptyDQ dq) = ((tail xs),(DQ (init xs))) 
+	| otherwise = error  "remDQ"
 	
+--DeQue Implementation 2: 
+
+data DequeMod a = DQM [a] [a] 
+
+emptyDQM = (DQM [] [])
+
+isEmptyDQM (DQM [] []) = True
+isEmptyDQM _ = False
+
+addDQMHead x (DQM ys xs) = (DQM ys (x:xs)) 
+
+addDQMTail x (DQM xs ys) = (DQM xs (ys++[x]))
+
+remDQMHead (DQM (x:xs) ys) = (x, (DQM xs ys))
+remDQMHead (DQM [] ys) = remDQMHead (DQM (reverse ys) []) 
+remDQMHead (DQM [] []) = error "remDQ"
+
+remDQMTail (DQM xs ys) = (tail xs, (DQM xs (init ys)))
+remDQMTail (DQM xs []) = (tail xs, (DQM (init xs) [])) 
+remDQMTail (DQM [] []) = error "remDQ"
+
+--16.10
+
+newtype UniqueQueue a = UniQ [a]
+
+emptyUniQ = UniQ []
+
+isEmptyUniQ (UniQ []) = True
+isEmptyUniQ _ = False
+
+addUniQ x (UniQ xs) 
+	| elem x xs = (UniQ xs) 
+	| otherwise = (UniQ (xs++[x]))
+
+remUniQ u@(UniQ (x:xs)) 
+	| not (isEmptyUniQ u) = (x, (UniQ xs))
+	| otherwise = error "remUniQ"
+
+--16.11
+
+newtype PriorityQueue a = PQ [(a,Int)]
+
+emptyPQ = PQ []
+
+isEmptyPQ (PQ []) = True
+isEmptyPQ (PQ _) = False
+
+addPQ x n (PQ []) = (PQ [(x,n)])
+addPQ x n (PQ ys)
+	| elem x (map fst ys) = (PQ ys) 
+	| otherwise = (PQ (ys++[(x,n)]))
+
+remPQ (PQ [(x,n)]) = (x, (PQ []))
+remPQ (PQ ((y,n):ys))
+	| n >= snd(ys !! 2) = remPQ (PQ ((y,n):(tail ys)))
+	| n < snd(ys !! 2) = remPQ (PQ ys)
+
+--16.12
+
+{-Use Proiriety Queues for Huffman Encodeing?-} 
+
+--16.13
+
+{-Are all the operations from the module Tree nessecary? 
+
+module Tree (Tree, nil, isNil, isNode, leftSub, rightSub,
+treeVal, insTree, delete, minTree)
+
+isNil could be defined in terms of nil
+
+minTree could be defined by treeVal -}
+
+--Am I missing anything?
+
+--16.14
+--Same as 16.6
+
+--16.15
+
+
