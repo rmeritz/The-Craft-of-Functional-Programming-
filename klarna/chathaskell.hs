@@ -48,8 +48,8 @@ runConn (sock, _) chan n = do
         case line of
          {-"$\\SinceLogOn" -> do
            hPutStrLn hdl (liftM show (liftM2 diffClockTimes t logonT))
-           loop
-         "$\\Time" -> do
+           loop-}
+         {-"$\\Time" -> do
            hPutStrLn hdl (liftM show getClockTime)
            loop-}
          ('$':'\\':_) -> hPutStrLn hdl "Bye!"
