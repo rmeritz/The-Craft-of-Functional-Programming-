@@ -3,11 +3,10 @@ module Chat where
 import Network.Socket
 import System
 import System.IO
-import Control.OldException
+import Control.Exception
 import Control.Concurrent
 import Control.Concurrent.Chan
 import Control.Monad
-import Control.Monad.Fix (fix)
 import Time 
  
 type Message = (Int, String)
@@ -42,22 +41,21 @@ runConn (sock, _) chan n = do
     reader <- (forkIO (forever (do
         (n', line) <- readChan chan'
         when (n /= n') $ hPutStrLn hdl line)))
-    handle (\_ -> return()) (forever (do
+    handle (\e -> exitWith e) (forever (do
         line <- liftM init (hGetLine hdl)
         t <- getClockTime 
         case line of
          {-"$\\SinceLogOn" -> do
            hPutStrLn hdl (liftM show (liftM2 diffClockTimes t logonT))
-           loop-}
-         {-"$\\Time" -> do
-           hPutStrLn hdl (liftM show getClockTime)
-           loop-}
-         ('$':'\\':_) -> do
-          hPutStrLn hdl "We'll miss you."
-          exitWith ExitSuccess
-         _      -> do
+           loop
+          "$\\Time" -> do
+            hPutStrLn hdl "blah"-}
+          ('$':'\\':_) -> do
+            hPutStrLn hdl "We'll miss you."
+            killThread reader
+            sendAll ("User" ++ show n ++ "left.")
+            hClose hdl
+            exitWith ExitSuccess
+          _      -> do
             sendAll ("UserID" ++ show n ++ ": " ++ line)))
-    killThread reader
-    sendAll ("User " ++ show n ++ " left.")
-    hClose hdl
 
