@@ -8,7 +8,8 @@ import Control.Concurrent
 import Control.Concurrent.Chan
 import Control.Monad
 import Time 
- 
+import Char (isDigit) 
+
 type Message = (Int, String)
  
 main :: IO ()
@@ -47,6 +48,12 @@ runConn (sock, _) chan n = do
         case line of
           --"$\\SinceLogOn" -> do hPutStrLn hdl (timeDiff t) 
           --"$\\Time" -> do hPutStrLn hdl timeNow
+          ('$':'\\':'p':x) -> do
+            let pmIDNum = (read (takeWhile isDigit x):: Int)
+            let pmMsg = tail (dropWhile (/=' ') x)
+            do when (n' /= pmIDNum) $ hPutStrLn hdl pmMsg
+            hPutStrLn hdl (pmMsg ++ " to " ++ show pmIDNum ++ ".") 
+             -- hPutStrLn hdl "To pm you must enter a userID."
           ('$':'\\':_) -> do
             hPutStrLn hdl "We'll miss you."
             killThread reader
