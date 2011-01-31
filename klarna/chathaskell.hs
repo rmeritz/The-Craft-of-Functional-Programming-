@@ -51,13 +51,16 @@ runConn (sock, _) chan n = do
           "$\\Time" -> do
             hPutStrLn hdl (show now)
           ('$':'\\':'s':x) -> do
-            let sIDNum = (read (takeWhile isDigit x):: Int)
-            let sMsg = (dropWhile (/=' ') x)
-            let sHead = "This is a secret from " ++ show sIDNum ++ ":"
-            let s = sHead ++ sMsg 
-            when (sIDNum /= n) $ writeChan chan' (sIDNum, s)
-            hPutStrLn hdl (sMsg ++ " to " ++ show sIDNum ++ ".") 
-             -- hPutStrLn hdl "To pm you must enter a userID."
+            let sIDNum = takeWhile isDigit x
+            let sMsg = dropWhile (/=' ') x
+            let sHead = "This is a secret from " ++ sIDNum ++ ":"
+            let s = sHead ++ sMsg
+            case sIDNum of 
+              "" -> do
+               hPutStrLn hdl "It is not a secret."
+              _ -> do
+               let sn = (read sIDNum :: Int)
+               when (sn /= n) $ writeChan chan' (sn, s)
           ('$':'\\':_) -> do
             hPutStrLn hdl "We'll miss you."
             killThread reader
