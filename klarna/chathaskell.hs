@@ -50,11 +50,13 @@ runConn (sock, _) chan n = do
             hPutStrLn hdl (show (diffClockTimes logOnT now))
           "$\\Time" -> do
             hPutStrLn hdl (show now)
-          ('$':'\\':'p':x) -> do
-            let pmIDNum = (read (takeWhile isDigit x):: Int)
-            let pmMsg = tail (dropWhile (/=' ') x)
-            when (n == pmIDNum) $ hPutStrLn hdl pmMsg
-            hPutStrLn hdl (pmMsg ++ " to " ++ show pmIDNum ++ ".") 
+          ('$':'\\':'s':x) -> do
+            let sIDNum = (read (takeWhile isDigit x):: Int)
+            let sMsg = (dropWhile (/=' ') x)
+            let sHead = "This is a secret from " ++ show sIDNum ++ ":"
+            let s = sHead ++ sMsg 
+            when (sIDNum /= n) $ writeChan chan' (sIDNum, s)
+            hPutStrLn hdl (sMsg ++ " to " ++ show sIDNum ++ ".") 
              -- hPutStrLn hdl "To pm you must enter a userID."
           ('$':'\\':_) -> do
             hPutStrLn hdl "We'll miss you."
