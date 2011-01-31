@@ -1,6 +1,7 @@
 module Chat where
 
 import Network.Socket
+import System
 import System.IO
 import Control.OldException
 import Control.Concurrent
@@ -41,7 +42,7 @@ runConn (sock, _) chan n = do
     reader <- (forkIO (forever (do
         (n', line) <- readChan chan'
         when (n /= n') $ hPutStrLn hdl line)))
-    handle (\_ -> return()) $ fix $ \loop -> do
+    handle (\_ -> return()) (forever (do
         line <- liftM init (hGetLine hdl)
         t <- getClockTime 
         case line of
@@ -51,10 +52,11 @@ runConn (sock, _) chan n = do
          {-"$\\Time" -> do
            hPutStrLn hdl (liftM show getClockTime)
            loop-}
-         ('$':'\\':_) -> hPutStrLn hdl "We'll miss you."
+         ('$':'\\':_) -> do
+          hPutStrLn hdl "We'll miss you."
+          exitWith ExitSuccess
          _      -> do
-            sendAll ("UserID" ++ show n ++ ": " ++ line)
-            loop
+            sendAll ("UserID" ++ show n ++ ": " ++ line)))
     killThread reader
     sendAll ("User " ++ show n ++ " left.")
     hClose hdl
