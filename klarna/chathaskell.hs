@@ -37,21 +37,23 @@ runConn (sock, _) chan n = do
     hSetBuffering hdl NoBuffering
     hPutStrLn hdl ("You are user number " ++ show n ++ ".")
     sendAll ("User number " ++ show n ++ " entered.")
-    logonT <- getClockTime
+    logOnT <- getClockTime
     chan' <- dupChan chan
     reader <- (forkIO (forever (do
         (n', line) <- readChan chan'
         when (n /= n') $ hPutStrLn hdl line)))
-    handle (\e -> exitWith e) (forever (do
+    handle (\e -> exitWith e) $ forever $ do
         line <- liftM init (hGetLine hdl)
-        t <- getClockTime 
+        now <- getClockTime
         case line of
-          --"$\\SinceLogOn" -> do hPutStrLn hdl (timeDiff t) 
-          --"$\\Time" -> do hPutStrLn hdl timeNow
+          "$\\SinceLogOn" -> do 
+            hPutStrLn hdl (show (diffClockTimes logOnT now))
+          "$\\Time" -> do
+            hPutStrLn hdl (show now)
           ('$':'\\':'p':x) -> do
             let pmIDNum = (read (takeWhile isDigit x):: Int)
             let pmMsg = tail (dropWhile (/=' ') x)
-            do when (n' /= pmIDNum) $ hPutStrLn hdl pmMsg
+            when (n == pmIDNum) $ hPutStrLn hdl pmMsg
             hPutStrLn hdl (pmMsg ++ " to " ++ show pmIDNum ++ ".") 
              -- hPutStrLn hdl "To pm you must enter a userID."
           ('$':'\\':_) -> do
@@ -61,11 +63,5 @@ runConn (sock, _) chan n = do
             hClose hdl
             exitWith ExitSuccess
           _  -> do
-            sendAll ("UserID" ++ show n ++ ": " ++ line)))
+            sendAll ("UserID" ++ show n ++ ": " ++ line)
 
-timeNow :: IO String 
-timeNow = liftM show getClockTime 
-
-timeDiff :: IO ClockTime -> IO String
-timeDiff prevTime  
-  = liftM show (liftM2 diffClockTimes getClockTime prevTime)
