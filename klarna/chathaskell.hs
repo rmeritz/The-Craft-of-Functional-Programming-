@@ -18,9 +18,9 @@ main = do
     setSocketOption sock ReuseAddr 1
     bindSocket sock (SockAddrInet 1125 iNADDR_ANY)
     listen sock 2
-    forkIO $ fix $ \loop -> do
+    forkIO (forever (do
         (_, msg) <- readChan chan
-        loop
+        return()))
     mainLoop sock chan 0
  
 mainLoop :: Socket -> Chan Message -> Int -> IO ()
@@ -52,7 +52,7 @@ runConn (sock, _) chan n = do
          {-"$\\Time" -> do
            hPutStrLn hdl (liftM show getClockTime)
            loop-}
-         ('$':'\\':_) -> hPutStrLn hdl "Bye!"
+         ('$':'\\':_) -> hPutStrLn hdl "We'll miss you."
          _      -> do
             sendAll ("UserID" ++ show n ++ ": " ++ line)
             loop
