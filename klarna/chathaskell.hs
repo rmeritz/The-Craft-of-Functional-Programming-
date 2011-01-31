@@ -38,10 +38,9 @@ runConn (sock, _) chan n = do
     sendAll ("User number " ++ show n ++ " entered.")
     logonT <- getClockTime
     chan' <- dupChan chan
-    reader <- forkIO $ fix $ \loop -> do
+    reader <- (forkIO (forever (do
         (n', line) <- readChan chan'
-        when (n /= n') $ hPutStrLn hdl line
-        loop
+        when (n /= n') $ hPutStrLn hdl line)))
     handle (\_ -> return()) $ fix $ \loop -> do
         line <- liftM init (hGetLine hdl)
         t <- getClockTime 
