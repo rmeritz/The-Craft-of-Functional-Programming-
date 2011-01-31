@@ -45,17 +45,20 @@ runConn (sock, _) chan n = do
         line <- liftM init (hGetLine hdl)
         t <- getClockTime 
         case line of
-         {-"$\\SinceLogOn" -> do
-           hPutStrLn hdl (liftM show (liftM2 diffClockTimes t logonT))
-           loop
-          "$\\Time" -> do
-            hPutStrLn hdl "blah"-}
+          --"$\\SinceLogOn" -> do hPutStrLn hdl (timeDiff t) 
+          --"$\\Time" -> do hPutStrLn hdl timeNow
           ('$':'\\':_) -> do
             hPutStrLn hdl "We'll miss you."
             killThread reader
-            sendAll ("User" ++ show n ++ "left.")
+            sendAll ("User " ++ show n ++ " left.")
             hClose hdl
             exitWith ExitSuccess
-          _      -> do
+          _  -> do
             sendAll ("UserID" ++ show n ++ ": " ++ line)))
 
+timeNow :: IO String 
+timeNow = liftM show getClockTime 
+
+timeDiff :: IO ClockTime -> IO String
+timeDiff prevTime  
+  = liftM show (liftM2 diffClockTimes getClockTime prevTime)
