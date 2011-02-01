@@ -7,6 +7,7 @@ import Control.Exception
 import Control.Concurrent
 import Control.Concurrent.Chan
 import Control.Monad
+import Data.Time 
 import Time 
 import Char (isDigit) 
 
@@ -32,41 +33,63 @@ mainLoop sock chan n = do
  
 runConn :: (Socket, SockAddr) -> Chan Message -> Int -> IO ()
 runConn (sock, _) chan n = do
-    let sendAll msg = writeChan chan (n, msg)
     hdl <- socketToHandle sock ReadWriteMode
     hSetBuffering hdl NoBuffering
     hPutStrLn hdl ("You are user number " ++ show n ++ ".")
-    sendAll ("User number " ++ show n ++ " entered.")
-    logOnT <- getClockTime
+    writeChan chan (n, "User number " ++ show n ++ " entered.") 
+    logOnT <- getCurrentTime
     chan' <- dupChan chan
-    reader <- (forkIO (forever (do
+    reader <- forkIO $ forever $ do
         (n', line) <- readChan chan'
-        when (n /= n') $ hPutStrLn hdl line)))
+        when (n /= n') $ hPutStrLn hdl line
     handle (\e -> exitWith e) $ forever $ do
         line <- liftM init (hGetLine hdl)
-        now <- getClockTime
+        now <- getCurrentTime
         case line of
-          "$\\SinceLogOn" -> do 
-            hPutStrLn hdl (show (diffClockTimes logOnT now))
-          "$\\Time" -> do
-            hPutStrLn hdl (show now)
-          ('$':'\\':'s':x) -> do
-            let sIDNum = takeWhile isDigit x
-            let sMsg = dropWhile (/=' ') x
-            let sHead = "This is a secret from " ++ sIDNum ++ ":"
-            let s = sHead ++ sMsg
-            case sIDNum of 
-              "" -> do
-               hPutStrLn hdl "It is not a secret."
-              _ -> do
-               let sn = (read sIDNum :: Int)
-               when (sn /= n) $ writeChan chan' (sn, s)
-          ('$':'\\':_) -> do
-            hPutStrLn hdl "We'll miss you."
-            killThread reader
-            sendAll ("User " ++ show n ++ " left.")
-            hClose hdl
-            exitWith ExitSuccess
-          _  -> do
-            sendAll ("UserID" ++ show n ++ ": " ++ line)
+          "$\\SinceLogOn" -> timeSinceLogOn logOnT now hdl 
+          "$\\Time" -> time now hdl
+          ('$':'\\':'s':x) -> secretMessage x n chan' hdl 
+          ('$':'\\':_) -> quit reader n hdl chan 
+          _  -> chat n line chan
+
+timeSinceLogOn :: UTCTime -> UTCTime -> Handle -> IO() 
+timeSinceLogOn logOnT now hdl = do 
+  let diff = diffUTCTime now logOnT
+  hPutStrLn hdl (timeChattingMsg diff)
+
+timeChattingMsg :: NominalDiffTime -> String 
+timeChattingMsg diff 
+  | diff < 0 = "Are you traveling through time?"
+  | diff > 86400 =  "You've been online "
+    ++ show diff ++".\n You need some fresh air."
+  | otherwise = "You have been chatting for " ++ show diff ++ "."
+
+time :: UTCTime -> Handle -> IO()
+time now hdl = do
+  hPutStrLn hdl (show now)
+  
+secretMessage :: String -> Int -> Chan Message -> Handle -> IO()
+secretMessage x n chan' hdl = do 
+  let sIDNum = takeWhile isDigit x
+  let sMsg = dropWhile (/=' ') x
+  let sHead = "Keep this a secret from " ++ sIDNum ++ ":"
+  let s = sHead ++ sMsg
+  case sIDNum of
+    "" -> do
+      hPutStrLn hdl "You didn't choose whose back to talk behind."
+    _ -> do
+      let sn = (read sIDNum :: Int)
+      when (sn /= n) $ writeChan chan' (sn, s)
+
+quit :: ThreadId -> Int -> Handle -> Chan Message -> IO()
+quit reader n hdl chan = do 
+  hPutStrLn hdl "We'll miss you."
+  killThread reader
+  writeChan chan (n, "User " ++ show n ++ " left.")
+  hClose hdl
+  exitWith ExitSuccess
+
+chat :: Int -> String -> Chan Message -> IO()
+chat n line chan = do  
+  writeChan chan  (n, "UserID" ++ show n ++ ": " ++ line)
 
