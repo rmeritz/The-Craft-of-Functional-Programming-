@@ -8,6 +8,8 @@ efficent forfinding values.
 But it could be less efficent for updating. 
 It could also find/delete duplicates quicker. -}
 
+import QueueState 
+
 module Store ( Store, initial, value, update) where
 
 type Var = String
@@ -389,5 +391,147 @@ minTree could be defined by treeVal -}
 --Same as 16.6
 
 --16.15
+
+{-Design Signiture for Index from 10.8
+
+type Doc = String
+type Line = String
+type Word = String 
+type Page = Int
+type Pages = [Page]
+type IndexEntry = (Pages, Word)
+
+newtype Index = Ind [IndexEntry] 
+
+All functions can stay the same just with added
+signiture.-}
+
+--16.16
+
+--queueEmpty could be defined by queueLength
+--no redunent operations in ServerState
+
+--16.17
+
+{-module RoundRobin (robinStart, addtoQueue, robinStep,
+RobinSize) -}
+
+--16.18
+
+{- Calculations:
+
+queueStep (QS 12 3 [Yes 8 4])
+= (QS (12+1) (3+1) [Yes 8 4], [])
+
+queueStep (QS 13 4 [Yes 8 4])
+= (QS (13+1) 0 [], [Discharge 8 (13-4-8) 4])
+
+queueStep (QS 14 0 [])
+= (QS (14+1) 0 [], [])
+-}
+
+--16.19
+
+{-serverSt1 = SS [ (QS 13 4 [Yes 8 4]),(QS 13 3 [Yes 8 4]) ]
+
+Calulations:
+
+serverStep serverSt1
+serverStep SS [ (QS 13 4 [Yes 8 4]),(QS 13 3 [Yes 8 4]) ]
+=(SS (q':qs'), mess++messes)
+	where
+	(q', mess) = queueStep (QS 13 4 [Yes 8 4]) = (QS 14 0 [],
+	[Discharge 8 1 4])
+	(qs', messes) = serverStep (SS [(QS 13 3 [Yes 8 4])] = (SS
+	(q':qs'), mess+messes)
+		where
+		(q', mess) = queueStep (QS 13 3 [Yes 8 4]) = (QS 14 4 [Yes 8
+		4], [])
+		(qs', messes) = serverStep (SS []) = (SS [], [])
+=(SS ((QS 14 0 []):(QS 14 4 [Yes 8 4]):[], (Discharge 8 1
+4):[]:[])
+=(SS [(QS 14 0 []),(QS 14 4 [Yes 8 4])], [(Discharge 8 1 4)])
+
+simulationStep SS [ (QS 13 4 [Yes 8 4]),(QS 13 3 [Yes 8 4]) ]
+(Yes 13 10)
+= (addNewObject (Yes 13 10) serverSt1, outmess)
+	where
+	(severState1, outmess) = serverStep SS [ (QS 13 4 [Yes 8
+	4]),(QS 13 3 [Yes 8 4]) ] = (SS [(QS 14 0 []),(QS 14 4 [Yes 8
+	4])], [(Discharge 8 1 4)]
+= (addNewObject (Yes 13 10) (SS [(QS 14 0 []), (QS 14 4 [Yes 8 4])]), [Discharge 8 1 4])
+= addToQueue (shortestQueue (SS [(QS 14 0 []), (QS 14 4 [Yes 8 4])))) (Yes 13 10) (SS [(QS 14 0 []), (QS 14 4 [Yes 8 4])], [Discharge 8 1 4)
+= (addToQueue (shortestQueue (SS [(QS 14 0 []), (QS 14 4 [Yes 8 4])]) (Yes 13 10) (SS [(QS 14 0 []), (QS 14 4 [Yes 8 4]))), [Discharge 8 1 4])
+= (addToQueue 0 (Yes 13 10) (SS [(QS 14 0 []), (QS 14 4 [Yes 8 4])), [Discharge 8 1 4])
+= SS (take 0 [(QS 14 0 []), (QS 14 4 [Yes 8 4])]) ++ [addMessage (Yes 13 10) [(QS 14 0 []), (QS 14 4 [Yes 8 4])]!!0)] ++ drop (0+1) (SS [(QS
+14 0 []), (QS 14 4 [Yes 8 4]))), [Discharge 8 1 4))
+= SS ([] ++ [(QS 14 0 [Yes 8 4])] ++ [(QS 14 4 [Yes 8 4], Discharge [8 1 4])
+= (SS [(QS 14 0 [Yes 8 4]), (QS 14 4 [Yes 8 4]))), [Discharge 8 1 4])
+-}
+--16.20
+
+{-ServerState cannot have type (Int -> QueueState) b/c then
+then there will not be a way to add a new object to the
+shortest queue. This data must be stored in the type. 
+-}
+
+type Index = Int
+type QLength = Int
+type QueueFunctions = Index -> QueueState
+
+newtype ServerStateMod = SSM QueueFunctions [QLength] 
+
+serverStartM :: ServerState 
+serverStartM = (SSM (\n -> queueStart) (replicate numQueues 0)) 
+
+serverSize :: ServerState -> ServerSize 
+serverSize (SSM _ n) = length n 
+--Could export numQueues instead
+
+numQueues :: Int
+numQueues = 4
+
+shortestQueue :: ServerState -> Index
+shortestQueue (SSM _ (x:xs)) = shortQCount x xs 0 0 
+	where 
+	shortQCount :: QLength -> [QLength] -> Int -> Int -> Index
+	shortQCount [] n c = c 
+	shortQCount x (x1:xs) n c
+		| x < x1 = shortQCount xs (n+1) c+1  
+		| otherwise = shortQCount x1 xs (n+1) (c+1)
+--if two queues are the same length then which one?
+--I think I lost my memory for how to to elegance. 
+--I have ugly helper functions with counters everywhere. 
+--But I don't know what to do instead. 
+
+addNewObjectN :: Inmess -> ServerStateMod -> ServerStateMod
+addNewObjectN n im (SSM functions sq ss) 
+(SSM (updatedF n functions sq ss im) (updateSQ functions
+sq) ss) 
+	where
+	updatedF :: QueueFunctions -> ShortestQ -> SeverSize ->
+	QueueFunction
+	updatedF n funs sq ss im = 
+	(\n -> | n < sq = funs n
+				 | n = sq = addMessage im (fun n) 
+				 | ss >= n = fun (n+1)) 
+ 	updateSQ :: 
+
+serverStep :: ServerStateMod -> (ServerStateMod, [Outmess])
+serverStep (SSM fun sq ss) 
+= ((SSM updateStep updateSQ ss), outmess)
+	where
+	updateStep = map fst (map queueStep fun)
+	outmess = foldr (++) [] (map snd (map queueStep fun))
+
+simulationStepM :: ServerStateMod -> Inmess ->
+(SeverStateMod, [Outmess]) 
+simulationStepM ssm im = (addNewObject im ssm1, outmess)
+		where
+		(ssm1, outmess) = severStep ssm 
+
+
+
+
 
 
